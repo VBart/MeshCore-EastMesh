@@ -147,6 +147,13 @@ That allowlist currently includes:
 
 These commands are available in the serial rescue CLI for `*_companion_radio_wifi` builds.
 
+To enter `CLI Rescue`:
+
+- open a serial monitor at `115200` baud
+- reboot the device
+- long-press the user button within the first 8 seconds after boot
+- wait for `========= CLI Rescue =========`
+
 - `get wifi.status`
   - shows configured SSID, connection status, raw WiFi status code, and IP when connected
 - `get wifi.ssid`

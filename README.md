@@ -168,6 +168,14 @@ Some constrained targets disable the panel to stay within flash limits. For exam
 
 `*_companion_radio_wifi` targets now support persisted WiFi rescue commands:
 
+- open a serial monitor at `115200` baud
+- reboot the device
+- long-press the user button within the first 8 seconds after boot to enter `CLI Rescue`
+- wait for `========= CLI Rescue =========`
+- send the commands from the serial monitor
+
+These rescue commands are only available after entering `CLI Rescue`:
+
 - `get wifi.status`
 - `get wifi.ssid`
 - `get wifi.powersaving`

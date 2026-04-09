@@ -125,6 +125,12 @@ T_Beam_S3_Supreme_SX1262_companion_radio_wifi
 
 Current companion WiFi builds support persisted WiFi rescue commands:
 
+- open a serial monitor at `115200` baud
+- reboot the device
+- long-press the user button within the first 8 seconds after boot to enter `CLI Rescue`
+- wait for `========= CLI Rescue =========`
+- then run the WiFi rescue commands below from the serial monitor
+
 ```text
 get wifi.status
 get wifi.ssid
