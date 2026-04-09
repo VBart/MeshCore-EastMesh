@@ -27,26 +27,18 @@ jobs:
       fail-fast: false
       matrix:
         environment:
-          # ESP32-S3 (most common platform)
-          - Heltec_v3_companion_radio_ble
-          - Heltec_v3_repeater
-          - Heltec_v3_room_server
-          - heltec_v4_companion_radio_ble
-          - heltec_v4_repeater
-          - heltec_v4_room_server
-          - T_Beam_S3_Supreme_SX1262_companion_radio_ble
-          - T_Beam_S3_Supreme_SX1262_repeater
-          - T_Beam_S3_Supreme_SX1262_room_server
-          # nRF52
-          - RAK_4631_companion_radio_ble
-          - RAK_4631_repeater
-          - RAK_4631_room_server
-          # RP2040
-          - PicoW_repeater
-          # STM32
-          - wio-e5-mini_repeater
+          # ESP32-S3 / core EastMesh targets
+          - Heltec_v3_companion_radio_wifi
+          - Heltec_v3_repeater_mqtt
+          - heltec_v4_companion_radio_wifi
+          - heltec_v4_repeater_mqtt
+          - T_Beam_S3_Supreme_SX1262_companion_radio_wifi
+          - T_Beam_S3_Supreme_SX1262_repeater_mqtt
+          # ESP32-C3
+          - Xiao_C3_companion_radio_wifi
+          - Xiao_C3_repeater_mqtt
           # ESP32-C6
-          - LilyGo_Tlora_C6_repeater_
+          - LilyGo_Tlora_C6_repeater_mqtt_
 
     steps:
       - name: Clone Repo
