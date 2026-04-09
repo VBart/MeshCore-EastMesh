@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for the open source MeshCore firmware">
+        <meta name="description" content="Documentation for the EastMesh layer on top of MeshCore, including WiFi, MQTT, and release workflows">
       
       
       
-        <link rel="canonical" href="https://meshcore-dev.github.io/meshcore/number_allocations/">
+        <link rel="canonical" href="https://xjarid.github.io/MeshCore-EastMesh/local-builds/">
       
       
-        <link rel="prev" href="../nrf52_power_management/">
+        <link rel="prev" href="../releases/">
       
       
-        <link rel="next" href="../packet_format/">
+        <link rel="next" href="../custom-cli/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Number Allocations - MeshCore Docs</title>
+        <title>Local Builds - MeshCore EastMesh Docs</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#number-allocations" class="md-skip">
+        <a href="#build-locally-with-uv" class="md-skip">
           Skip to content
         </a>
       
@@ -86,7 +86,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="MeshCore Docs" class="md-header__button md-logo" aria-label="MeshCore Docs" data-md-component="logo">
+    <a href=".." title="MeshCore EastMesh Docs" class="md-header__button md-logo" aria-label="MeshCore EastMesh Docs" data-md-component="logo">
       
   <img src="../_assets/meshcore_tm.svg" alt="logo">
 
@@ -99,13 +99,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            MeshCore Docs
+            MeshCore EastMesh Docs
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Number Allocations
+              Local Builds
             
           </span>
         </div>
@@ -161,13 +161,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/meshcore-dev/meshcore/" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/xJARiD/MeshCore-EastMesh" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    meshcore-dev/meshcore
+    xJARiD/MeshCore-EastMesh
   </div>
 </a>
       </div>
@@ -197,22 +197,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="MeshCore Docs" class="md-nav__button md-logo" aria-label="MeshCore Docs" data-md-component="logo">
+    <a href=".." title="MeshCore EastMesh Docs" class="md-nav__button md-logo" aria-label="MeshCore EastMesh Docs" data-md-component="logo">
       
   <img src="../_assets/meshcore_tm.svg" alt="logo">
 
     </a>
-    MeshCore Docs
+    MeshCore EastMesh Docs
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/meshcore-dev/meshcore/" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/xJARiD/MeshCore-EastMesh" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    meshcore-dev/meshcore
+    xJARiD/MeshCore-EastMesh
   </div>
 </a>
     </div>
@@ -233,7 +233,7 @@
   <span class="md-ellipsis">
     
   
-    Introduction
+    Home
   
 
     
@@ -253,149 +253,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli_commands/" class="md-nav__link">
+      <a href="../releases/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    CLI Commands
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../companion_protocol/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Companion Protocol
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Local Documentation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Frequently Asked Questions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kiss_modem_protocol/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MeshCore KISS Modem Protocol
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../nrf52_power_management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    nRF52 Power Management
+    Releases
   
 
     
@@ -424,6 +289,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Builds
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -431,7 +314,7 @@
   <span class="md-ellipsis">
     
   
-    Number Allocations
+    Local Builds
   
 
     
@@ -440,6 +323,91 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Useful Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-style-local-builds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release-Style Local Builds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-repeater_mqtt-boards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported repeater_mqtt Boards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-companion_radio_wifi-boards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported companion_radio_wifi Boards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#companion-wifi-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Companion WiFi CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -452,122 +420,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../packet_format/" class="md-nav__link">
+      <a href="../custom-cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Packet Format
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../payloads/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Payload Format
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../qr_codes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    QR Codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../stats_binary_frames/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Stats Binary Frame Structures
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../terminal_chat_cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Terminal Chat CLI
+    Custom CLI
   
 
     
@@ -600,6 +460,80 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Useful Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#release-style-local-builds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Release-Style Local Builds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-repeater_mqtt-boards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported repeater_mqtt Boards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-companion_radio_wifi-boards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported companion_radio_wifi Boards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#companion-wifi-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Companion WiFi CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -615,7 +549,7 @@
 
 
   
-    <a href="https://github.com/meshcore-dev/meshcore/edit/main/docs/number_allocations.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/xJARiD/MeshCore-EastMesh/edit/main/docs/local-builds.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -623,35 +557,104 @@
   
 
 
-<h1 id="number-allocations">Number Allocations</h1>
-<p>This document lists unique numbers/identifiers used in various MeshCore protcol payloads.</p>
-<h1 id="group-data-types">Group Data Types</h1>
-<p>The <code>PAYLOAD_TYPE_GRP_DATA</code> payloads have a 16-bit data-type field, which identifies which application the packet is for.</p>
-<p>To make sure multiple applications can function without interfering with each other, the table below is for reserving various ranges of data-type values. Just modify this table, adding a row, then submit a PR to have it authorised/merged.</p>
-<p>NOTE: the range FF00 - FFFF is for use while you're developing, doing POC, and for these you don't need to request to use/allocate.</p>
-<p>Once you have a working app/project, you need to be able to demonstrate it exists/works, and THEN request type IDs. So, just use the testing/dev range while developing, then request IDs before you transition to publishing your project.</p>
-<table>
-<thead>
-<tr>
-<th>Data-Type range</th>
-<th>App name</th>
-<th>Contact</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0000 - 00FF</td>
-<td>-reserved for internal use-</td>
-<td></td>
-</tr>
-<tr>
-<td>FF00 - FFFF</td>
-<td>-reserved for testing/dev-</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<p>(add rows, inside the range 0100 - FEFF for custom apps)</p>
+<h1 id="build-locally-with-uv">Build Locally With uv</h1>
+<p>This repo uses <code>uv</code> for Python tooling and runs PlatformIO through <code>uv run</code>.</p>
+<h2 id="setup">Setup</h2>
+<p>From the repo root:</p>
+<pre><code class="language-bash">uv sync
+</code></pre>
+<h2 id="useful-commands">Useful Commands</h2>
+<p>List build targets:</p>
+<pre><code class="language-bash">bash build.sh list
+</code></pre>
+<p>Plain PlatformIO build for a single target:</p>
+<pre><code class="language-bash">uv run pio run -e heltec_v4_repeater_mqtt
+uv run pio run -e heltec_v4_companion_radio_wifi
+</code></pre>
+<p>Flash a target:</p>
+<pre><code class="language-bash">uv run pio run -e heltec_v4_repeater_mqtt -t upload --upload-port /dev/tty.usbmodemXXXX
+</code></pre>
+<p>Serial monitor:</p>
+<pre><code class="language-bash">uv run pio device monitor --port /dev/tty.usbmodemXXXX --baud 115200
+</code></pre>
+<h2 id="release-style-local-builds">Release-Style Local Builds</h2>
+<p>If you want the same version metadata used by the release workflows, export the version variables first.</p>
+<p>Companion WiFi:</p>
+<pre><code class="language-bash">export FIRMWARE_VERSION=v1.14.1
+bash build.sh build-firmware heltec_v4_companion_radio_wifi
+</code></pre>
+<p>Repeater MQTT:</p>
+<pre><code class="language-bash">export FIRMWARE_VERSION=v1.14.1
+export EASTMESH_VERSION=v1.0.1
+bash build.sh build-firmware heltec_v4_repeater_mqtt
+</code></pre>
+<p>This produces versioned artifacts in <code>out/</code>.</p>
+<h2 id="supported-repeater_mqtt-boards">Supported <code>repeater_mqtt</code> Boards</h2>
+<pre><code class="language-text">T_Beam_S3_Supreme_SX1262_repeater_mqtt
+LilyGo_TLora_V2_1_1_6_repeater_mqtt
+LilyGo_TBeam_1W_repeater_mqtt
+Xiao_C3_repeater_mqtt
+RAK_3112_repeater_mqtt
+Tbeam_SX1262_repeater_mqtt
+Heltec_E290_repeater_mqtt
+Tbeam_SX1276_repeater_mqtt
+Heltec_E213_repeater_mqtt
+Heltec_Wireless_Tracker_repeater_mqtt
+M5Stack_Unit_C6L_repeater_mqtt
+LilyGo_TDeck_repeater_mqtt
+Station_G2_repeater_mqtt
+Station_G2_logging_repeater_mqtt
+LilyGo_T3S3_sx1262_repeater_mqtt
+Meshadventurer_sx1262_repeater_mqtt
+Meshadventurer_sx1268_repeater_mqtt
+Heltec_Wireless_Paper_repeater_mqtt
+heltec_v4_repeater_mqtt
+heltec_v4_tft_repeater_mqtt
+heltec_tracker_v2_repeater_mqtt
+Heltec_v3_repeater_mqtt
+Heltec_WSL3_repeater_mqtt
+LilyGo_T3S3_sx1276_repeater_mqtt
+Heltec_v2_repeater_mqtt
+nibble_screen_connect_repeater_mqtt
+Tenstar_C3_sx1262_repeater_mqtt
+Tenstar_C3_sx1268_repeater_mqtt
+Heltec_ct62_repeater_mqtt
+Xiao_S3_WIO_repeater_mqtt
+Generic_E22_sx1262_repeater_mqtt
+Generic_E22_sx1268_repeater_mqtt
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li>some <code>*_repeater_mqtt_</code> experimental C6-style envs exist in the repo but are not listed here as primary EastMesh targets</li>
+<li><code>Xiao_C3_repeater_mqtt</code> disables the web panel to stay within flash limits</li>
+</ul>
+<h2 id="supported-companion_radio_wifi-boards">Supported <code>companion_radio_wifi</code> Boards</h2>
+<pre><code class="language-text">Xiao_S3_WIO_companion_radio_wifi
+Heltec_v3_companion_radio_wifi
+Heltec_WSL3_companion_radio_wifi
+LilyGo_TBeam_1W_companion_radio_wifi
+RAK_3112_companion_radio_wifi
+LilyGo_TLora_V2_1_1_6_companion_radio_wifi
+ThinkNode_M5_companion_radio_wifi
+Xiao_C3_companion_radio_wifi
+heltec_tracker_v2_companion_radio_wifi
+heltec_v4_companion_radio_wifi
+heltec_v4_tft_companion_radio_wifi
+Station_G2_companion_radio_wifi
+ThinkNode_M2_companion_radio_wifi
+nibble_screen_connect_companion_radio_wifi
+Heltec_v2_companion_radio_wifi
+T_Beam_S3_Supreme_SX1262_companion_radio_wifi
+</code></pre>
+<h2 id="companion-wifi-cli">Companion WiFi CLI</h2>
+<p>Current companion WiFi builds support persisted WiFi rescue commands:</p>
+<pre><code class="language-text">get wifi.status
+get wifi.ssid
+get wifi.powersaving
+set wifi.ssid &lt;ssid&gt;
+set wifi.pwd &lt;password&gt;
+set wifi.powersaving none|min|max
+</code></pre>
 
 
 

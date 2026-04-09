@@ -6,17 +6,15 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for the open source MeshCore firmware">
+        <meta name="description" content="Documentation for the EastMesh layer on top of MeshCore, including WiFi, MQTT, and release workflows">
       
       
       
-        <link rel="canonical" href="https://meshcore-dev.github.io/meshcore/qr_codes/">
+        <link rel="canonical" href="https://xjarid.github.io/MeshCore-EastMesh/custom-cli/">
       
       
-        <link rel="prev" href="../payloads/">
+        <link rel="prev" href="../local-builds/">
       
-      
-        <link rel="next" href="../stats_binary_frames/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>QR Codes - MeshCore Docs</title>
+        <title>Custom CLI - MeshCore EastMesh Docs</title>
       
     
     
@@ -70,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#qr-codes" class="md-skip">
+        <a href="#custom-cli-commands" class="md-skip">
           Skip to content
         </a>
       
@@ -86,7 +84,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="MeshCore Docs" class="md-header__button md-logo" aria-label="MeshCore Docs" data-md-component="logo">
+    <a href=".." title="MeshCore EastMesh Docs" class="md-header__button md-logo" aria-label="MeshCore EastMesh Docs" data-md-component="logo">
       
   <img src="../_assets/meshcore_tm.svg" alt="logo">
 
@@ -99,13 +97,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            MeshCore Docs
+            MeshCore EastMesh Docs
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              QR Codes
+              Custom CLI
             
           </span>
         </div>
@@ -161,13 +159,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/meshcore-dev/meshcore/" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/xJARiD/MeshCore-EastMesh" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    meshcore-dev/meshcore
+    xJARiD/MeshCore-EastMesh
   </div>
 </a>
       </div>
@@ -197,22 +195,22 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="MeshCore Docs" class="md-nav__button md-logo" aria-label="MeshCore Docs" data-md-component="logo">
+    <a href=".." title="MeshCore EastMesh Docs" class="md-nav__button md-logo" aria-label="MeshCore EastMesh Docs" data-md-component="logo">
       
   <img src="../_assets/meshcore_tm.svg" alt="logo">
 
     </a>
-    MeshCore Docs
+    MeshCore EastMesh Docs
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/meshcore-dev/meshcore/" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/xJARiD/MeshCore-EastMesh" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    meshcore-dev/meshcore
+    xJARiD/MeshCore-EastMesh
   </div>
 </a>
     </div>
@@ -233,7 +231,7 @@
   <span class="md-ellipsis">
     
   
-    Introduction
+    Home
   
 
     
@@ -253,14 +251,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli_commands/" class="md-nav__link">
+      <a href="../releases/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    CLI Commands
+    Releases
   
 
     
@@ -280,203 +278,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../companion_protocol/" class="md-nav__link">
+      <a href="../local-builds/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Companion Protocol
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../docs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Local Documentation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Frequently Asked Questions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kiss_modem_protocol/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MeshCore KISS Modem Protocol
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../nrf52_power_management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    nRF52 Power Management
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../number_allocations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Number Allocations
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../packet_format/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Packet Format
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../payloads/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Payload Format
+    Local Builds
   
 
     
@@ -512,7 +321,7 @@
   <span class="md-ellipsis">
     
   
-    QR Codes
+    Custom CLI
   
 
     
@@ -530,7 +339,7 @@
   <span class="md-ellipsis">
     
   
-    QR Codes
+    Custom CLI
   
 
     
@@ -556,10 +365,104 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-channel" class="md-nav__link">
+  <a href="#repeater-mqtt-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Channel
+        Repeater MQTT Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Repeater MQTT Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-status-and-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Status And Routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-message-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Message Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifi-settings-for-mqtt-repeaters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi Settings For MQTT Repeaters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-panel-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Panel Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-panel-allowlisted-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Panel Allowlisted Commands
       
     </span>
   </a>
@@ -567,10 +470,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-contact" class="md-nav__link">
+  <a href="#companion-wifi-rescue-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Contact
+        Companion WiFi Rescue Commands
       
     </span>
   </a>
@@ -581,60 +484,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../stats_binary_frames/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Stats Binary Frame Structures
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../terminal_chat_cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Terminal Chat CLI
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -666,10 +515,104 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-channel" class="md-nav__link">
+  <a href="#repeater-mqtt-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Channel
+        Repeater MQTT Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Repeater MQTT Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-status-and-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Status And Routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-message-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Message Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mqtt-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MQTT Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wifi-settings-for-mqtt-repeaters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WiFi Settings For MQTT Repeaters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-panel-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Panel Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#web-panel-allowlisted-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Panel Allowlisted Commands
       
     </span>
   </a>
@@ -677,10 +620,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-contact" class="md-nav__link">
+  <a href="#companion-wifi-rescue-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Contact
+        Companion WiFi Rescue Commands
       
     </span>
   </a>
@@ -704,7 +647,7 @@
 
 
   
-    <a href="https://github.com/meshcore-dev/meshcore/edit/main/docs/qr_codes.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/xJARiD/MeshCore-EastMesh/edit/main/docs/custom-cli.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -712,32 +655,169 @@
   
 
 
-<h1 id="qr-codes">QR Codes</h1>
-<p>This document provides an overview of QR Code formats that can be used for sharing MeshCore channels and contacts. The formats described below are supported by the MeshCore mobile app.</p>
-<h2 id="add-channel">Add Channel</h2>
-<p><strong>Example URL</strong>:</p>
-<pre><code>meshcore://channel/add?name=Public&amp;secret=8b3387e9c5cdea6ac9e5edbaa115cd72
-</code></pre>
-<p><strong>Parameters</strong>:</p>
+<h1 id="custom-cli-commands">Custom CLI Commands</h1>
+<p>This page covers the EastMesh-specific CLI commands added in this repository.</p>
+<p>It does not try to repeat the full upstream MeshCore CLI surface.</p>
+<h2 id="repeater-mqtt-commands">Repeater MQTT Commands</h2>
+<p>These commands are available on <code>*_repeater_mqtt</code> firmware targets.</p>
+<h3 id="mqtt-status-and-routing">MQTT Status And Routing</h3>
 <ul>
-<li><code>name</code>: Channel name (URL-encoded if needed)</li>
-<li><code>secret</code>: 16-byte secret represented as 32 hex characters</li>
+<li><code>get mqtt.status</code></li>
+<li>shows WiFi, NTP, IATA, endpoint status, and TX state</li>
+<li><code>get mqtt.iata</code></li>
+<li>shows the IATA/location code used in MQTT topics</li>
+<li><code>set mqtt.iata &lt;code&gt;</code></li>
+<li>sets the IATA/location code, for example <code>MEL</code></li>
 </ul>
-<h2 id="add-contact">Add Contact</h2>
-<p><strong>Example URL</strong>:</p>
-<pre><code>meshcore://contact/add?name=Example+Contact&amp;public_key=9cd8fcf22a47333b591d96a2b848b73f457b1bb1a3ea2453a885f9e5787765b1&amp;type=1
-</code></pre>
-<p><strong>Parameters</strong>:</p>
+<h3 id="mqtt-identity">MQTT Identity</h3>
 <ul>
-<li><code>name</code>: Contact name (URL-encoded if needed)</li>
-<li><code>public_key</code>: 32-byte public key represented as 64 hex characters</li>
-<li><code>type</code>: numeric contact type<ul>
-<li><code>1</code>: Companion</li>
-<li><code>2</code>: Repeater</li>
-<li><code>3</code>: Room Server</li>
-<li><code>4</code>: Sensor</li>
+<li><code>get mqtt.owner</code></li>
+<li>shows the configured owner public key</li>
+<li><code>set mqtt.owner &lt;64-hex-char-public-key&gt;</code></li>
+<li>sets the owner public key used in JWT metadata</li>
+<li><code>mqtt.owner &lt;64-hex-char-public-key&gt;</code></li>
+<li>shorthand for setting the owner public key</li>
+<li><code>get mqtt.email</code></li>
+<li>shows the configured owner email</li>
+<li><code>set mqtt.email &lt;email&gt;</code></li>
+<li>sets the owner email used in JWT metadata</li>
+<li><code>mqtt.email &lt;email&gt;</code></li>
+<li>shorthand for setting the owner email</li>
 </ul>
-</li>
+<h3 id="mqtt-message-controls">MQTT Message Controls</h3>
+<ul>
+<li><code>get mqtt.packets</code></li>
+<li>shows whether packet messages are published</li>
+<li><code>set mqtt.packets on|off</code></li>
+<li>enables or disables packet publishing</li>
+<li><code>get mqtt.raw</code></li>
+<li>shows whether raw packet payloads are published</li>
+<li><code>set mqtt.raw on|off</code></li>
+<li>enables or disables the separate <code>raw</code> MQTT topic</li>
+<li><code>get mqtt.tx</code></li>
+<li>shows whether TX packets are included</li>
+<li><code>set mqtt.tx on|off</code></li>
+<li>enables or disables TX packet publishing</li>
+</ul>
+<h3 id="mqtt-endpoints">MQTT Endpoints</h3>
+<ul>
+<li><code>get mqtt.eastmesh-au</code></li>
+<li><code>set mqtt.eastmesh-au on|off</code></li>
+<li><code>get mqtt.letsmesh-eu</code></li>
+<li><code>set mqtt.letsmesh-eu on|off</code></li>
+<li><code>get mqtt.letsmesh-us</code></li>
+<li><code>set mqtt.letsmesh-us on|off</code></li>
+</ul>
+<p>Legacy dotted aliases are also accepted:</p>
+<ul>
+<li><code>mqtt.eastmesh.au</code></li>
+<li><code>mqtt.letsmesh.eu</code></li>
+<li><code>mqtt.letsmesh.us</code></li>
+</ul>
+<h3 id="wifi-settings-for-mqtt-repeaters">WiFi Settings For MQTT Repeaters</h3>
+<ul>
+<li><code>get wifi.status</code></li>
+<li>shows SSID, connection state, raw WiFi status code, and IP when connected</li>
+<li><code>get wifi.ssid</code></li>
+<li>shows the configured WiFi SSID</li>
+<li><code>set wifi.ssid &lt;ssid&gt;</code></li>
+<li>sets the WiFi SSID</li>
+<li><code>set wifi.pwd &lt;password&gt;</code></li>
+<li>sets the WiFi password</li>
+<li><code>get wifi.powersaving</code></li>
+<li>shows the current WiFi power save mode</li>
+<li><code>set wifi.powersaving none|min|max</code></li>
+<li>sets WiFi power saving mode</li>
+</ul>
+<h3 id="web-panel-controls">Web Panel Controls</h3>
+<ul>
+<li><code>get web</code></li>
+<li><code>get web.status</code></li>
+<li>shows whether the local HTTPS panel is available</li>
+<li><code>set web on|off</code></li>
+<li><code>set.web on|off</code></li>
+<li>enables or disables the local HTTPS panel</li>
+</ul>
+<h3 id="runtime-diagnostics">Runtime Diagnostics</h3>
+<ul>
+<li><code>memory</code></li>
+<li>shows current heap and PSRAM usage</li>
+</ul>
+<h2 id="web-panel-allowlisted-commands">Web Panel Allowlisted Commands</h2>
+<p>When the repeater web panel is enabled, it only allows a limited command set.</p>
+<p>That allowlist currently includes:</p>
+<ul>
+<li><code>get mqtt.status</code></li>
+<li><code>get web</code></li>
+<li><code>get web.status</code></li>
+<li><code>advert</code></li>
+<li><code>reboot</code></li>
+<li><code>start ota</code></li>
+<li><code>memory</code></li>
+<li><code>get wifi.status</code></li>
+<li><code>get wifi.powersaving</code></li>
+<li><code>get mqtt.iata</code></li>
+<li><code>set mqtt.iata &lt;code&gt;</code></li>
+<li><code>get mqtt.owner</code></li>
+<li><code>set mqtt.owner &lt;64-hex-char-public-key&gt;</code></li>
+<li><code>get mqtt.email</code></li>
+<li><code>set mqtt.email &lt;email&gt;</code></li>
+<li><code>get mqtt.packets</code></li>
+<li><code>set mqtt.packets on|off</code></li>
+<li><code>get mqtt.raw</code></li>
+<li><code>set mqtt.raw on|off</code></li>
+<li><code>get mqtt.tx</code></li>
+<li><code>set mqtt.tx on|off</code></li>
+<li><code>get mqtt.eastmesh-au</code></li>
+<li><code>set mqtt.eastmesh-au on|off</code></li>
+<li><code>get mqtt.letsmesh-eu</code></li>
+<li><code>set mqtt.letsmesh-eu on|off</code></li>
+<li><code>get mqtt.letsmesh-us</code></li>
+<li><code>set mqtt.letsmesh-us on|off</code></li>
+<li><code>set web on|off</code></li>
+<li><code>get name</code></li>
+<li><code>set name &lt;device-name&gt;</code></li>
+<li><code>get lat</code></li>
+<li><code>set lat &lt;latitude&gt;</code></li>
+<li><code>get lon</code></li>
+<li><code>set lon &lt;longitude&gt;</code></li>
+<li><code>get guest.password</code></li>
+<li><code>set guest.password &lt;password&gt;</code></li>
+<li><code>set prv.key &lt;64-hex-char-private-key&gt;</code></li>
+<li><code>get advert.interval</code></li>
+<li><code>set advert.interval &lt;minutes&gt;</code></li>
+<li><code>get flood.advert.interval</code></li>
+<li><code>set flood.advert.interval &lt;hours&gt;</code></li>
+<li><code>get flood.max</code></li>
+<li><code>set flood.max &lt;count&gt;</code></li>
+<li><code>get owner.info</code></li>
+<li><code>set owner.info &lt;text&gt;</code></li>
+</ul>
+<h2 id="companion-wifi-rescue-commands">Companion WiFi Rescue Commands</h2>
+<p>These commands are available in the serial rescue CLI for <code>*_companion_radio_wifi</code> builds.</p>
+<ul>
+<li><code>get wifi.status</code></li>
+<li>shows configured SSID, connection status, raw WiFi status code, and IP when connected</li>
+<li><code>get wifi.ssid</code></li>
+<li>shows the configured WiFi SSID</li>
+<li><code>get wifi.powersaving</code></li>
+<li>shows the current WiFi power saving mode</li>
+<li><code>set wifi.ssid &lt;ssid&gt;</code></li>
+<li>saves a WiFi SSID and immediately retries connection</li>
+<li><code>set wifi.pwd &lt;password&gt;</code></li>
+<li>saves a WiFi password and immediately retries connection</li>
+<li><code>set wifi.powersaving none|min|max</code></li>
+<li>changes the WiFi power save mode</li>
+</ul>
+<p>Companion WiFi builds also still support the existing rescue commands such as:</p>
+<ul>
+<li><code>set pin &lt;6-digit-pin&gt;</code></li>
+<li><code>rebuild</code></li>
+<li><code>erase</code></li>
+<li><code>ls ...</code></li>
+<li><code>cat ...</code></li>
+<li><code>rm ...</code></li>
+<li><code>reboot</code></li>
 </ul>
 
 
