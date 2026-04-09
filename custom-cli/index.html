@@ -795,8 +795,17 @@
 </ul>
 <h2 id="companion-wifi-rescue-commands">Companion WiFi Rescue Commands</h2>
 <p>These commands are available in the serial rescue CLI for <code>*_companion_radio_wifi</code> builds.</p>
+<p>To enter <code>CLI Rescue</code>:</p>
 <ul>
-<li><code>get wifi.status</code></li>
+<li>open a serial monitor at <code>115200</code> baud</li>
+<li>reboot the device</li>
+<li>long-press the user button within the first 8 seconds after boot</li>
+<li>
+<p>wait for <code>========= CLI Rescue =========</code></p>
+</li>
+<li>
+<p><code>get wifi.status</code></p>
+</li>
 <li>shows configured SSID, connection status, raw WiFi status code, and IP when connected</li>
 <li><code>get wifi.ssid</code></li>
 <li>shows the configured WiFi SSID</li>
