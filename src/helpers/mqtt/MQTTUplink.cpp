@@ -1,7 +1,7 @@
 #include "MQTTUplink.h"
 #include "MQTTCaCerts.h"
 #if defined(WITH_WEB_PANEL) && WITH_WEB_PANEL
-  #include "WebPanelCert.h"
+  #include "generated/WebPanelCert.h"
 #endif
 
 #ifdef WITH_MQTT_UPLINK

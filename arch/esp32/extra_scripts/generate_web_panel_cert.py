@@ -15,7 +15,7 @@ def render_pem_array(name, pem_text):
 
 
 project_dir = Path(env["PROJECT_DIR"])
-header_path = project_dir / "src/helpers/mqtt/WebPanelCert.h"
+header_path = project_dir / "src/helpers/mqtt/generated/WebPanelCert.h"
 
 if header_path.exists():
     existing = header_path.read_text()
