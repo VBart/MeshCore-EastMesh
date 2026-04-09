@@ -496,28 +496,25 @@ https://discord.com/channels/826570251612323860/1330643963501351004/134182637212
 
 Build instructions for MeshCore:
 
-For Windows, first install WSL and Python+pip via: https://plainenglish.io/blog/setting-up-python-on-windows-subsystem-for-linux-wsl-26510f1b2d80
+For Windows, first install WSL via: https://plainenglish.io/blog/setting-up-python-on-windows-subsystem-for-linux-wsl-26510f1b2d80
 
 (Linux, Windows+WSL) In the terminal/shell:
 ```
 sudo apt update
 sudo apt install libpython3-dev
-sudo apt install python3-venv
 ```
-Mac: python3 should be already installed.
+Install `uv`: https://docs.astral.sh/uv/getting-started/installation/
 
 Then it should be the same for all platforms:
 ```
-python3 -m venv meshcore
-cd meshcore && source bin/activate
-pip install -U platformio
 git clone https://github.com/ripplebiz/MeshCore.git
 cd MeshCore
+uv sync
 ```
 open platformio.ini and in `[arduino_base]` edit the `LORA_FREQ=867.5`
 save, then run:
 ```
-pio run -e RAK_4631_Repeater
+uv run pio run -e RAK_4631_Repeater
 ```
 then you'll find `firmware.zip` in `.pio/build/RAK_4631_Repeater`
 

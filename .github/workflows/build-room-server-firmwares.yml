@@ -13,21 +13,21 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      OFFICIAL_MESHCORE_VERSION: ${{ vars.OFFICIAL_MESHCORE_VERSION }}
     steps:
 
       - name: Clone Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Build Environment
         uses: ./.github/actions/setup-build-environment
 
       - name: Build Firmwares
-        env:
-          FIRMWARE_VERSION: ${{ env.GIT_TAG_VERSION }}
         run: /usr/bin/env bash build.sh build-room-server-firmwares
 
       - name: Upload Workflow Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: room-server-firmwares
           path: out
@@ -36,7 +36,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: Room Server Firmware ${{ env.GIT_TAG_VERSION }}
+          name: Room Server Firmware ${{ env.RELEASE_VERSION }}
           body: ""
           draft: true
           files: out/*

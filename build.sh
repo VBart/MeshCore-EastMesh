@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+require_uv() {
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "uv is required. Install it from https://docs.astral.sh/uv/" >&2
+    exit 1
+  fi
+}
+
+sync_python_tooling() {
+  uv sync --locked --no-group docs >/dev/null
+  uv venv --allow-existing --seed >/dev/null
+}
+
+run_python() {
+  uv run --no-sync python "$@"
+}
+
+run_pio() {
+  uv run --no-sync pio "$@"
+}
+
 global_usage() {
   cat - <<EOF
 Usage:
@@ -49,7 +69,7 @@ EOF
 
 # get a list of pio env names that start with "env:"
 get_pio_envs() {
-  pio project config | grep 'env:' | sed 's/env://'
+  run_pio project config | grep 'env:' | sed 's/env://'
 }
 
 # Catch cries for help before doing anything else.
@@ -65,7 +85,10 @@ case $1 in
 esac
 
 # cache project config json for use in get_platform_for_env()
-PIO_CONFIG_JSON=$(pio project config --json-output)
+require_uv
+sync_python_tooling
+
+PIO_CONFIG_JSON=$(run_pio project config --json-output)
 
 # $1 should be the string to find (case insensitive)
 get_pio_envs_containing_string() {
@@ -93,7 +116,7 @@ get_pio_envs_ending_with_string() {
 # $1 should be the environment name
 get_platform_for_env() {
   local env_name=$1
-  echo "$PIO_CONFIG_JSON" | python3 -c "
+  echo "$PIO_CONFIG_JSON" | run_python -c "
 import sys, json, re
 data = json.load(sys.stdin)
 for section, options in data:
@@ -133,8 +156,12 @@ build_firmware() {
   fi
 
   # set firmware version string
-  # e.g: v1.0.0-abcdef
-  FIRMWARE_VERSION_STRING="${FIRMWARE_VERSION}-${COMMIT_HASH}"
+  # e.g: v1.2.3-eastmesh-v1.0.1-abcdef
+  FIRMWARE_VERSION_BASE="${FIRMWARE_VERSION}"
+  if [ -n "$EASTMESH_VERSION" ]; then
+    FIRMWARE_VERSION_BASE="${FIRMWARE_VERSION_BASE}-eastmesh-${EASTMESH_VERSION}"
+  fi
+  FIRMWARE_VERSION_STRING="${FIRMWARE_VERSION_BASE}-${COMMIT_HASH}"
 
   # craft filename
   # e.g: RAK_4631_Repeater-v1.0.0-SHA
@@ -147,18 +174,18 @@ build_firmware() {
   disable_debug_flags
 
   # build firmware target
-  pio run -e $1
+  run_pio run -e $1
 
   # build merge-bin for esp32 fresh install, copy .bins to out folder (e.g: Heltec_v3_room_server-v1.0.0-SHA.bin)
   if [ "$ENV_PLATFORM" == "ESP32_PLATFORM" ]; then
-    pio run -t mergebin -e $1
+    run_pio run -t mergebin -e $1
     cp .pio/build/$1/firmware.bin out/${FIRMWARE_FILENAME}.bin 2>/dev/null || true
     cp .pio/build/$1/firmware-merged.bin out/${FIRMWARE_FILENAME}-merged.bin 2>/dev/null || true
   fi
 
   # build .uf2 for nrf52 boards, copy .uf2 and .zip to out folder (e.g: RAK_4631_Repeater-v1.0.0-SHA.uf2)
   if [ "$ENV_PLATFORM" == "NRF52_PLATFORM" ]; then
-    python3 bin/uf2conv/uf2conv.py .pio/build/$1/firmware.hex -c -o .pio/build/$1/firmware.uf2 -f 0xADA52840
+    run_python bin/uf2conv/uf2conv.py .pio/build/$1/firmware.hex -c -o .pio/build/$1/firmware.uf2 -f 0xADA52840
     cp .pio/build/$1/firmware.uf2 out/${FIRMWARE_FILENAME}.uf2 2>/dev/null || true
     cp .pio/build/$1/firmware.zip out/${FIRMWARE_FILENAME}.zip 2>/dev/null || true
   fi
