@@ -9,15 +9,15 @@ require_uv() {
 
 sync_python_tooling() {
   uv sync --locked --no-group docs >/dev/null
-  uv pip install --python .venv/bin/python pip setuptools wheel >/dev/null
+  uv venv --allow-existing --seed >/dev/null
 }
 
 run_python() {
-  .venv/bin/python "$@"
+  uv run --no-sync python "$@"
 }
 
 run_pio() {
-  .venv/bin/pio "$@"
+  uv run --no-sync pio "$@"
 }
 
 global_usage() {

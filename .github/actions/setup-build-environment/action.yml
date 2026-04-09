@@ -23,7 +23,7 @@ runs:
       shell: bash
       run: |
         uv sync --locked --no-group docs
-        uv pip install --python .venv/bin/python pip setuptools wheel
+        uv venv --allow-existing --seed
         echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
 
     # Recommended EastMesh tag format:
