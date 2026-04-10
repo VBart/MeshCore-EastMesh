@@ -1,16 +1,248 @@
-:root {
-    --md-primary-fg-color: #1F2937;
-    --md-primary-fg-color--light: #1F2937;
-    --md-primary-fg-color--dark: #1F2937;
-    --md-accent-fg-color: #1F2937;
+[data-md-color-scheme="default"] {
+    --web-accent: #2f8f4e;
+    --web-accent-hover: #3fae61;
+    --web-background: #f4f6f9;
+    --web-text: #1f2937;
+    --web-text-muted: #4b5563;
+    --web-border: rgba(0, 0, 0, 0.08);
+    --web-surface-1: #ffffff;
+    --web-surface-2: #f0f3f7;
+    --web-terminal: #f0f3f7;
+    --web-header-bg: #303030;
+    --web-header-fg: #e6eaf0;
+
+    --md-primary-fg-color: var(--web-header-bg);
+    --md-primary-fg-color--light: var(--web-header-bg);
+    --md-primary-fg-color--dark: #111827;
+    --md-primary-bg-color: var(--web-header-fg);
+    --md-primary-bg-color--light: rgba(230, 234, 240, 0.72);
+
+    --md-accent-fg-color: var(--web-accent);
+    --md-accent-fg-color--transparent: rgba(47, 143, 78, 0.12);
+
+    --md-default-bg-color: var(--web-background);
+    --md-default-bg-color--light: #fbfcfd;
+    --md-default-bg-color--lighter: #ffffff;
+    --md-default-bg-color--lightest: #ffffff;
+    --md-default-fg-color: var(--web-text);
+    --md-default-fg-color--light: var(--web-text-muted);
+    --md-default-fg-color--lighter: rgba(75, 85, 99, 0.7);
+    --md-default-fg-color--lightest: rgba(75, 85, 99, 0.35);
+
+    --md-code-bg-color: #e9eef4;
+    --md-code-fg-color: #1f2937;
+    --md-typeset-a-color: var(--web-accent);
 }
 
-/* hide git repo version */
+[data-md-color-scheme="slate"] {
+    --web-accent: #36a167;
+    --web-accent-hover: #49c27d;
+    --web-background: #222222;
+    --web-text: #e6eaf0;
+    --web-text-muted: #9aa4b2;
+    --web-border: rgba(255, 255, 255, 0.08);
+    --web-surface-1: #303030;
+    --web-surface-2: #343434;
+    --web-terminal: #222222;
+    --web-header-bg: #303030;
+    --web-header-fg: #e6eaf0;
+
+    --md-primary-fg-color: var(--web-header-bg);
+    --md-primary-fg-color--light: #3a3a3a;
+    --md-primary-fg-color--dark: #242424;
+    --md-primary-bg-color: var(--web-header-fg);
+    --md-primary-bg-color--light: rgba(230, 234, 240, 0.72);
+
+    --md-accent-fg-color: var(--web-accent-hover);
+    --md-accent-fg-color--transparent: rgba(73, 194, 125, 0.14);
+
+    --md-default-bg-color: var(--web-background);
+    --md-default-bg-color--light: #2b2b2b;
+    --md-default-bg-color--lighter: #313131;
+    --md-default-bg-color--lightest: #343434;
+    --md-default-fg-color: var(--web-text);
+    --md-default-fg-color--light: var(--web-text-muted);
+    --md-default-fg-color--lighter: rgba(154, 164, 178, 0.72);
+    --md-default-fg-color--lightest: rgba(154, 164, 178, 0.35);
+
+    --md-code-bg-color: #242424;
+    --md-code-fg-color: #e6eaf0;
+    --md-typeset-a-color: var(--web-accent-hover);
+}
+
+body {
+    background: linear-gradient(180deg, var(--web-background), var(--web-surface-2));
+    background-attachment: fixed;
+}
+
+.md-header,
+.md-tabs {
+    background: var(--web-header-bg);
+    color: var(--web-header-fg);
+}
+
+.md-header {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+[data-md-color-scheme="default"] .md-header {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+[data-md-color-scheme="default"] .md-header__topic,
+[data-md-color-scheme="default"] .md-tabs__link,
+[data-md-color-scheme="default"] .md-search__icon,
+[data-md-color-scheme="default"] .md-header__button {
+    color: var(--web-header-fg);
+}
+
+[data-md-color-scheme="default"] .md-search__form {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="default"] .md-search__input::placeholder {
+    color: rgba(230, 234, 240, 0.72);
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+    height: 1.85rem;
+    width: auto;
+}
+
+.md-search__form,
+.md-search__output {
+    border-radius: 12px;
+}
+
+.md-main {
+    background: transparent;
+}
+
+.md-content__inner {
+    background: linear-gradient(180deg, var(--web-surface-2), var(--web-surface-1));
+    border: 1px solid var(--web-border);
+    border-radius: 18px;
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+    margin: 0.4rem 0 1.2rem;
+    padding: 1.4rem 1.35rem;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner {
+    box-shadow: none;
+}
+
+.md-search__output,
+.md-dialog {
+    background: linear-gradient(180deg, var(--web-surface-2), var(--web-surface-1));
+    border: 1px solid var(--web-border);
+    border-radius: 16px;
+}
+
+.md-sidebar__scrollwrap {
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.md-nav__title,
+.md-nav__link,
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset code,
+.md-button {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+    letter-spacing: 0.02em;
+}
+
+.md-nav__link--active,
+.md-nav__link:focus,
+.md-nav__link:hover,
+.md-typeset a:hover {
+    color: var(--web-accent-hover);
+}
+
+.md-typeset a {
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+}
+
+.md-typeset .md-button {
+    border-radius: 10px;
+    border: none;
+    background: var(--web-accent);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0.7em 1.1em;
+}
+
+.md-typeset .md-button:hover {
+    background: var(--web-accent-hover);
+    color: #ffffff;
+}
+
+.md-typeset code,
+.md-typeset pre > code {
+    border-radius: 10px;
+}
+
+.highlight,
+.md-typeset pre {
+    background: var(--web-terminal);
+    border: 1px solid var(--web-border);
+    border-radius: 14px;
+}
+
+.md-typeset table:not([class]) {
+    border: 1px solid var(--web-border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+    background: var(--web-surface-2);
+}
+
+.md-typeset table:not([class]) tr:hover {
+    background: color-mix(in srgb, var(--web-accent) 8%, transparent);
+}
+
+.md-typeset hr {
+    border-bottom-color: var(--web-border);
+}
+
+.md-typeset blockquote {
+    border-left: 0.18rem solid var(--web-accent);
+    color: var(--md-default-fg-color--light);
+}
+
+.md-footer {
+    background: transparent;
+}
+
+.md-footer-meta,
+.md-footer__inner {
+    background: transparent;
+}
+
+/* Hide git repo version */
 .md-source__fact--version {
     display: none;
 }
 
-/* underline links */
-.md-typeset a {
-    text-decoration: underline;
+@media screen and (max-width: 76.2344em) {
+    .md-content__inner,
+    .md-sidebar__scrollwrap {
+        border-radius: 14px;
+    }
 }

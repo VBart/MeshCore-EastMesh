@@ -8,12 +8,28 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: _assets/meshcore_tm.svg
+  logo: _assets/xjarid.svg
+  favicon: _assets/xjarid.svg
   features:
     - content.action.edit
     - content.code.copy
     - search.highlight
     - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 
 extra_css:
   - _stylesheets/extra.css
@@ -21,5 +37,7 @@ extra_css:
 nav:
   - Home: index.md
   - Releases: releases.md
+  - Migration: migration.md
+  - Web Panel: web-panel.md
   - Local Builds: local-builds.md
   - Custom CLI: custom-cli.md

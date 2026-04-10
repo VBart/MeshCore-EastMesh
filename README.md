@@ -106,8 +106,8 @@ uv run pio device monitor --port /dev/tty.usbmodemXXXX --baud 115200
 Build docs locally:
 
 ```bash
-uv run --group docs mkdocs serve
-uv run --group docs mkdocs build
+uv run --group docs zensical serve
+uv run --group docs zensical build
 ```
 
 ## Key Files

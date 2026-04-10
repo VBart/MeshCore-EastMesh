@@ -21,3 +21,21 @@ This docs site only covers the EastMesh-specific pieces in this repository.
 For general MeshCore behavior, radio operation, and upstream firmware concepts, refer to the upstream project:
 
 - [meshcore-dev/MeshCore](https://github.com/meshcore-dev/MeshCore)
+
+## Australian Regional References
+
+These references are community-maintained rather than official project documentation, but they are still useful for Australian regional setup notes, local conventions, and area-specific MeshCore references.
+
+### ACT / NSW / QLD / SA / TAS / VIC
+
+- [wiki.eastmesh.au](https://wiki.eastmesh.au/)
+- [wiki.meshcoreaus.org](https://wiki.meshcoreaus.org/)
+
+### Sydney
+
+- [nswmesh.au](https://nswmesh.au/)
+- [github.com/nswmesh](https://github.com/nswmesh/)
+
+### Brisbane
+
+- [wiki.mbug.com.au/en/Meshcore/Settings](https://wiki.mbug.com.au/en/Meshcore/Settings)

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-labelledby="title desc">
+  <title id="title">xJARiD</title>
+  <desc id="desc">xJARiD wordmark for documentation branding.</desc>
+  <text x="8" y="47"
+        fill="#FFFFFF"
+        font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace"
+        font-size="30"
+        font-weight="700"
+        letter-spacing="0.8">xJARiD</text>
+</svg>
