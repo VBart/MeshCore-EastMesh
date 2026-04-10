@@ -164,6 +164,27 @@ void MQTTUplink::reconnectWifi() {
   _last_wifi_attempt = 0;
 }
 
+bool MQTTUplink::sendStatusNow() {
+  if (!_running || !_have_time_sync || WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
+
+  bool any_connected = false;
+  for (const BrokerState& broker : _brokers) {
+    if ((_prefs.enabled_mask & broker.spec->bit) != 0 && broker.connected && broker.client != nullptr) {
+      any_connected = true;
+      break;
+    }
+  }
+  if (!any_connected) {
+    return false;
+  }
+
+  publishStatus(true);
+  _last_status_publish = millis();
+  return true;
+}
+
 void MQTTUplink::makeSafeToken(const char* input, char* output, size_t output_size) {
   if (output_size == 0) {
     return;
@@ -334,6 +355,7 @@ void MQTTUplink::destroyBroker(BrokerState& broker) {
     broker.client = nullptr;
   }
   broker.connected = false;
+  broker.connect_announced = false;
 }
 
 void MQTTUplink::queuePublish(BrokerState& broker, const char* topic, const char* payload, bool retain) {
@@ -728,10 +750,13 @@ void MQTTUplink::loop(const MQTTStatusSnapshot& snapshot) {
   ensureWebServer();
 
   for (BrokerState& broker : _brokers) {
-    bool was_connected = broker.connected;
     ensureBroker(broker);
-    if (!was_connected && broker.connected) {
+    if (broker.connected && !broker.connect_announced) {
       publishOnlineStatus(broker);
+      broker.connect_announced = true;
+      _last_status_publish = millis();
+    } else if (!broker.connected) {
+      broker.connect_announced = false;
     }
   }
 
@@ -808,10 +833,10 @@ void MQTTUplink::formatStatusReply(char* reply, size_t reply_size) const {
     return "retry";
   };
 
-  snprintf(reply, reply_size, "> wifi:%s ntp:%s iata:%s eastmesh-au:%s letsmesh-eu:%s letsmesh-us:%s tx:%s",
+  snprintf(reply, reply_size, "> wifi:%s ntp:%s iata:%s eastmesh-au:%s letsmesh-eu:%s letsmesh-us:%s status:%s tx:%s",
            getWifiStateLabel(_prefs, _wifi_started), _have_time_sync ? "up" : "wait", _prefs.iata,
            broker_state(_brokers[0]), broker_state(_brokers[1]), broker_state(_brokers[2]),
-           _prefs.tx_enabled ? "on" : "off");
+           _prefs.status_enabled ? "on" : "off", _prefs.tx_enabled ? "on" : "off");
 }
 
 void MQTTUplink::formatWebStatusReply(char* reply, size_t reply_size) const {
@@ -877,9 +902,7 @@ bool MQTTUplink::setWebEnabled(bool enabled) {
 #if WITH_WEB_PANEL
   _prefs.web_enabled = enabled ? 1 : 0;
   bool ok = savePrefs();
-  if (_prefs.web_enabled == 0) {
-    stopWebServer();
-  } else {
+  if (_prefs.web_enabled != 0) {
     ensureWebServer();
   }
   return ok;
@@ -960,9 +983,7 @@ bool MQTTUplink::setOwnerPublicKey(const char* owner_public_key) {
 
   if (owner_public_key[0] == 0) {
     _prefs.owner_public_key[0] = 0;
-    bool ok = savePrefs();
-    reconnectWifi();
-    return ok;
+    return savePrefs();
   }
 
   if (strlen(owner_public_key) != 64) {
@@ -976,9 +997,7 @@ bool MQTTUplink::setOwnerPublicKey(const char* owner_public_key) {
     _prefs.owner_public_key[i] = toupper(static_cast<unsigned char>(owner_public_key[i]));
   }
   _prefs.owner_public_key[64] = 0;
-  bool ok = savePrefs();
-  reconnectWifi();
-  return ok;
+  return savePrefs();
 }
 
 bool MQTTUplink::setOwnerEmail(const char* owner_email) {
@@ -986,9 +1005,7 @@ bool MQTTUplink::setOwnerEmail(const char* owner_email) {
     return false;
   }
   StrHelper::strncpy(_prefs.owner_email, owner_email, sizeof(_prefs.owner_email));
-  bool ok = savePrefs();
-  reconnectWifi();
-  return ok;
+  return savePrefs();
 }
 
 void MQTTUplink::formatWifiStatusReply(char* reply, size_t reply_size) const {
@@ -1077,6 +1094,7 @@ bool MQTTUplink::setOwnerPublicKey(const char*) { return false; }
 bool MQTTUplink::setOwnerEmail(const char*) { return false; }
 void MQTTUplink::formatWifiStatusReply(char* reply, size_t reply_size) const { snprintf(reply, reply_size, "> unsupported"); }
 void MQTTUplink::reconnectWifi() {}
+bool MQTTUplink::sendStatusNow() { return false; }
 
 #endif
 

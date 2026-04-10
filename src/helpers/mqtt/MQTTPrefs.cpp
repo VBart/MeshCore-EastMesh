@@ -44,14 +44,20 @@ bool MQTTPrefsStore::load(FILESYSTEM* fs, MQTTPrefs& prefs) {
     return false;
   }
 
-  size_t bytes_to_read = min(static_cast<size_t>(file.size()), sizeof(prefs));
-  bool ok = bytes_to_read >= sizeof(prefs.magic) &&
-            file.read(reinterpret_cast<uint8_t*>(&prefs), bytes_to_read) == bytes_to_read;
+  MQTTPrefs persisted{};
+  size_t bytes_to_read = min(static_cast<size_t>(file.size()), sizeof(persisted));
+  bool ok = bytes_to_read >= sizeof(persisted.magic) &&
+            file.read(reinterpret_cast<uint8_t*>(&persisted), bytes_to_read) == bytes_to_read;
   file.close();
 
-  if (!ok || prefs.magic != kMagic) {
+  if (!ok || persisted.magic != kMagic) {
+    // Legacy or corrupt MQTT prefs should not survive migration. Remove the
+    // stale file and persist a clean current-format default copy immediately.
+    fs->remove(kFilename);
+    save(fs, prefs);
     return false;
   }
+  prefs = persisted;
   if (prefs.wifi_powersave > 2) {
     prefs.wifi_powersave = 0;
   }

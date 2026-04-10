@@ -90,6 +90,7 @@ This is a small terminal for allowlisted commands.
 - press `Enter` to run the command
 - command history is shown in the terminal box below
 - save buttons elsewhere in the page also show the generated command and the reply here
+- `clock` is available here if you want to check the repeater's current board time
 
 This makes it easy to see exactly what the panel sent to the repeater.
 
@@ -201,7 +202,7 @@ Use the repeater admin password, not the guest password.
 
 ### A command says it is not allowlisted
 
-The panel intentionally limits what can be run from the browser. Use the serial CLI for commands outside the web allowlist.
+The panel intentionally limits what can be run from the browser. Use the serial CLI for commands outside the web allowlist. `clock` is included, but most maintenance and debug commands are still serial-only.
 
 ### Stats or settings do not refresh
 

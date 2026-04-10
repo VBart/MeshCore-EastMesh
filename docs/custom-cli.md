@@ -11,7 +11,7 @@ These commands are available on `*_repeater_mqtt` firmware targets.
 ### MQTT Status And Routing
 
 - `get mqtt.status`
-  - shows WiFi, NTP, IATA, endpoint status, and TX state
+  - shows WiFi, NTP, IATA, endpoint status, status publishing state, and TX state
 - `get mqtt.statuscfg`
   - shows whether periodic status messages are enabled
 - `get mqtt.iata`
@@ -107,6 +107,7 @@ When the repeater web panel is enabled, it only allows a limited command set.
 
 That allowlist currently includes:
 
+- `clock`
 - `get mqtt.status`
 - `get web`
 - `get web.status`

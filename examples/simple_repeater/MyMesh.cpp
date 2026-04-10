@@ -1317,7 +1317,15 @@ void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply
     } else {
       strcpy(reply, "Err - bad mqtt.email");
     }
-  } else if (memcmp(command, "get mqtt.status", 15) == 0) {
+  } else if (strcmp(command, "send mqtt.status") == 0) {
+    if (mqtt.sendStatusNow()) {
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Err - mqtt status unavailable");
+    }
+  } else if (strcmp(command, "get mqtt.statuscfg") == 0) {
+    sprintf(reply, "> %s", mqtt.isStatusEnabled() ? "on" : "off");
+  } else if (strcmp(command, "get mqtt.status") == 0) {
     mqtt.formatStatusReply(reply, 160);
   } else if (strcmp(command, "get web.status") == 0 || strcmp(command, "get web") == 0) {
     mqtt.formatWebStatusReply(reply, 160);
@@ -1337,8 +1345,6 @@ void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply
     sprintf(reply, "> %s", mqtt.isPacketsEnabled() ? "on" : "off");
   } else if (memcmp(command, "get mqtt.raw", 12) == 0) {
     sprintf(reply, "> %s", mqtt.isRawEnabled() ? "on" : "off");
-  } else if (memcmp(command, "get mqtt.statuscfg", 18) == 0) {
-    sprintf(reply, "> %s", mqtt.isStatusEnabled() ? "on" : "off");
   } else if (memcmp(command, "get mqtt.tx", 11) == 0) {
     sprintf(reply, "> %s", mqtt.isTxEnabled() ? "on" : "off");
   } else if (memcmp(command, "get mqtt.eastmesh-au", 20) == 0 || memcmp(command, "get mqtt.eastmesh.au", 20) == 0) {
@@ -1436,6 +1442,7 @@ void MyMesh::runWebCommand(const char* command, char* reply, size_t reply_size) 
   };
 
   bool allowed =
+      matches_exact("clock") ||
       matches_exact("get mqtt.status") ||
       matches_exact("get web.status") ||
       matches_exact("get web") ||

@@ -159,13 +159,13 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       --button-secondary-text:#e6eaf0;
     }
     html { min-height:100%; background:linear-gradient(180deg,var(--background),var(--surface2)); background-repeat:no-repeat; background-attachment:fixed; }
-    body { min-height:100vh; margin:0; font:16px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; background:transparent; color:var(--text); transition:background .2s ease,color .2s ease; }
+    body { min-height:100vh; margin:0; background:transparent; color:var(--text); font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; font-size:16px; line-height:1.4; transition:background .2s ease,color .2s ease; }
     main { max-width:920px; margin:0 auto; padding:24px; }
-    .theme-fab { position:fixed; top:18px; right:18px; width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; z-index:20; box-shadow:0 12px 28px rgba(0,0,0,.18); font-size:22px; line-height:1; }
     .card { background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:18px; }
     h1,h2,h3 { margin:0 0 12px; font-size:18px; }
     p { color:var(--text-muted); margin:8px 0 0; }
-    input, textarea, button, select { width:100%; box-sizing:border-box; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); padding:12px; font:inherit; }
+    input:not([type="checkbox"]), textarea, button, select { width:100%; min-height:44px; box-sizing:border-box; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); padding:12px; font-family:inherit; font-size:inherit; line-height:inherit; }
+    input:not([type="checkbox"]), textarea, select, button { -webkit-appearance:none; appearance:none; }
     textarea { min-height:100px; resize:vertical; }
     button { width:auto; cursor:pointer; background:var(--accent); color:var(--button-text); border:none; font-weight:700; transition:background .2s ease,color .2s ease,border-color .2s ease; }
     button:hover { background:var(--accent-hover); }
@@ -187,12 +187,26 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
     .label { font-size:12px; color:var(--text-muted); margin-bottom:6px; display:block; }
     .fieldline { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
     .iconbtn { width:44px; padding:12px 0; }
+    .placeholder-slot { display:block; width:44px; height:44px; }
     .savebtn { width:100%; background:var(--accent); color:var(--button-text); border:none; }
     .savebtn:hover { background:var(--accent-hover); }
+    .broker-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .broker-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px; display:grid; gap:10px; }
+    .broker-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .broker-copy { display:grid; gap:4px; min-width:0; }
+    .broker-title { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; }
+    .broker-state { font-size:13px; color:var(--text); }
+    .broker-state.on { color:var(--accent); }
+    .switch { position:relative; display:inline-flex; width:54px; height:32px; flex:0 0 auto; }
+    .switch input { position:absolute; opacity:0; width:0; height:0; min-height:0; padding:0; border:0; -webkit-appearance:none; appearance:none; }
+    .slider { position:absolute; inset:0; border-radius:999px; background:var(--background); border:1px solid var(--border); transition:background .2s ease,border-color .2s ease; cursor:pointer; }
+    .slider::before { content:""; position:absolute; width:24px; height:24px; left:3px; top:3px; border-radius:50%; background:var(--surface1); box-shadow:0 2px 8px rgba(0,0,0,.18); transition:transform .2s ease,background .2s ease; }
+    .switch input:checked + .slider { background:var(--accent); border-color:transparent; }
+    .switch input:checked + .slider::before { transform:translateX(22px); background:#fff; }
+    .panel-warning { min-height:1.4em; font-size:13px; color:var(--status-red); }
     .themebtn { padding:10px 14px; }
-    #app { display:none; }
     #status { white-space:pre-wrap; color:var(--text-muted); min-height:1.4em; }
-    .terminal { background:var(--terminal-bg); border:1px solid var(--terminal-border); border-radius:12px; padding:14px; min-height:180px; max-height:320px; overflow:auto; font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .terminal { background:var(--terminal-bg); border:1px solid var(--terminal-border); border-radius:12px; padding:14px; min-height:180px; max-height:320px; overflow:auto; font-family:inherit; font-size:14px; line-height:1.45; }
     .term-entry { margin:0 0 12px; }
     .term-cmd { color:var(--terminal-cmd); }
     .term-out { white-space:pre-wrap; color:var(--text); }
@@ -231,7 +245,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       body { font-size:15px; }
       main { padding:16px; }
       .card { padding:16px; margin-bottom:14px; }
-      .row, .row3, .row-command, .metric-grid, .hud-grid-1, .hud-grid-2, .hud-grid-3, .core-grid, .core-metrics { grid-template-columns:1fr; }
+      .row, .row3, .row-command, .metric-grid, .hud-grid-1, .hud-grid-2, .hud-grid-3, .core-grid, .core-metrics, .broker-grid { grid-template-columns:1fr; }
       .inline-actions { grid-template-columns:minmax(0,1fr) auto auto; }
       .fieldline { grid-template-columns:minmax(0,1fr) auto; align-items:center; }
       .row-command button { width:100%; }
@@ -247,6 +261,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       .actions-group.center { grid-template-columns:1fr; justify-items:center; }
       #actionsPanel .actions-group button { width:100%; }
       #actionsPanel .actions-group.center button { width:auto; min-width:56px; }
+      .broker-row { gap:10px; }
       .row > div + div, .row3 > div + div { margin-top:4px; }
       .row > div[style*="align-self:end"] { padding-top:4px; }
     }
@@ -303,7 +318,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       </div>
     </section>
 
-    <section class="card" id="cliPanel">
+	    <section class="card" id="cliPanel" style="display:none">
       <h2>Run CLI Command</h2>
       <div class="row-command">
         <input id="command" placeholder="get mqtt.status">
@@ -350,7 +365,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
           <label class="label" for="guestPassword">Guest Password</label>
           <div class="inline-actions">
             <input id="guestPassword" type="password" placeholder="new guest password">
-            <span></span>
+	            <span class="placeholder-slot" aria-hidden="true"></span>
             <button class="savebtn" data-prefix="set guest.password " data-input="guestPassword">Save</button>
           </div>
         </div>
@@ -358,7 +373,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
           <label class="label" for="privateKey">Private Key</label>
           <div class="inline-actions">
             <input id="privateKey" placeholder="64-hex-char private key">
-            <span></span>
+	            <span class="placeholder-slot" aria-hidden="true"></span>
             <button class="savebtn" data-prefix="set prv.key " data-input="privateKey">Save</button>
           </div>
           <p>Changing the private key requires a reboot to apply.</p>
@@ -488,16 +503,58 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
             <button class="savebtn" data-prefix="set mqtt.owner " data-input="mqttOwner">Save</button>
           </div>
         </div>
-        <div class="field-card">
-          <label class="label" for="mqttEmail">MQTT Email</label>
-          <div class="inline-actions">
-            <input id="mqttEmail" type="email" placeholder="owner@example.com">
-            <button class="iconbtn" data-load-cmd="get mqtt.email" data-load-input="mqttEmail" title="Refresh MQTT email">&#8635;</button>
-            <button class="savebtn" data-prefix="set mqtt.email " data-input="mqttEmail">Save</button>
-          </div>
-        </div>
-      </div>
-    </section>
+	        <div class="field-card">
+	          <label class="label" for="mqttEmail">MQTT Email</label>
+	          <div class="inline-actions">
+	            <input id="mqttEmail" type="email" placeholder="owner@example.com">
+	            <button class="iconbtn" data-load-cmd="get mqtt.email" data-load-input="mqttEmail" title="Refresh MQTT email">&#8635;</button>
+	            <button class="savebtn" data-prefix="set mqtt.email " data-input="mqttEmail">Save</button>
+	          </div>
+	        </div>
+	        <div class="field-card">
+	          <label class="label">MQTT Servers</label>
+	          <div class="broker-grid">
+	            <div class="broker-card">
+	              <div class="broker-row">
+	                <div class="broker-copy">
+	                  <div class="broker-title">EastMesh AU</div>
+	                  <div class="broker-state" id="mqttEastmeshAuState">Off</div>
+	                </div>
+	                <label class="switch" aria-label="Toggle EastMesh AU">
+	                  <input id="mqttEastmeshAu" type="checkbox" data-broker-on="set mqtt.eastmesh-au on" data-broker-off="set mqtt.eastmesh-au off">
+	                  <span class="slider"></span>
+	                </label>
+	              </div>
+	            </div>
+	            <div class="broker-card">
+	              <div class="broker-row">
+	                <div class="broker-copy">
+	                  <div class="broker-title">LetsMesh EU</div>
+	                  <div class="broker-state" id="mqttLetsmeshEuState">Off</div>
+	                </div>
+	                <label class="switch" aria-label="Toggle LetsMesh EU">
+	                  <input id="mqttLetsmeshEu" type="checkbox" data-broker-on="set mqtt.letsmesh-eu on" data-broker-off="set mqtt.letsmesh-eu off">
+	                  <span class="slider"></span>
+	                </label>
+	              </div>
+	            </div>
+	            <div class="broker-card">
+	              <div class="broker-row">
+	                <div class="broker-copy">
+	                  <div class="broker-title">LetsMesh US</div>
+	                  <div class="broker-state" id="mqttLetsmeshUsState">Off</div>
+	                </div>
+	                <label class="switch" aria-label="Toggle LetsMesh US">
+	                  <input id="mqttLetsmeshUs" type="checkbox" data-broker-on="set mqtt.letsmesh-us on" data-broker-off="set mqtt.letsmesh-us off">
+	                  <span class="slider"></span>
+	                </label>
+	              </div>
+	            </div>
+	          </div>
+	          <div id="mqttBrokerWarning" class="panel-warning"></div>
+	        </div>
+	      </div>
+	    </section>
 
     <section class="card" id="statsPanel" style="display:none">
       <h2>Stats</h2>
@@ -846,16 +903,44 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
         return JSON.parse(text);
       });
     }
-    function applyBootstrapData(data) {
-      if (!data) return;
-      if (typeof data.name === "string") document.getElementById("nodeName").value = data.name;
-      if (typeof data.mqtt_iata === "string" && data.mqtt_iata.length) document.getElementById("mqttIata").value = data.mqtt_iata;
-      if (typeof data.mqtt_owner === "string") document.getElementById("mqttOwner").value = data.mqtt_owner;
-      if (typeof data.mqtt_email === "string") document.getElementById("mqttEmail").value = data.mqtt_email;
-      if (typeof data.advert_interval === "string") document.getElementById("advertInterval").value = data.advert_interval;
-      if (typeof data.flood_interval === "string") document.getElementById("floodInterval").value = data.flood_interval;
-      if (typeof data.flood_max === "string") document.getElementById("floodMax").value = data.flood_max;
-    }
+	    function applyBootstrapData(data) {
+	      if (!data) return;
+	      if (typeof data.name === "string") document.getElementById("nodeName").value = data.name;
+	      if (typeof data.mqtt_iata === "string" && data.mqtt_iata.length) document.getElementById("mqttIata").value = data.mqtt_iata;
+	      if (typeof data.mqtt_owner === "string") document.getElementById("mqttOwner").value = data.mqtt_owner;
+	      if (typeof data.mqtt_email === "string") document.getElementById("mqttEmail").value = data.mqtt_email;
+	      if (typeof data.advert_interval === "string") document.getElementById("advertInterval").value = data.advert_interval;
+	      if (typeof data.flood_interval === "string") document.getElementById("floodInterval").value = data.flood_interval;
+	      if (typeof data.flood_max === "string") document.getElementById("floodMax").value = data.flood_max;
+	      if (typeof data.mqtt_eastmesh_au === "string") setBrokerToggle("mqttEastmeshAu", data.mqtt_eastmesh_au);
+	      if (typeof data.mqtt_letsmesh_eu === "string") setBrokerToggle("mqttLetsmeshEu", data.mqtt_letsmesh_eu);
+	      if (typeof data.mqtt_letsmesh_us === "string") setBrokerToggle("mqttLetsmeshUs", data.mqtt_letsmesh_us);
+	      updateBrokerWarning();
+	    }
+	    function setBrokerToggle(inputId, state) {
+	      const input = document.getElementById(inputId);
+	      if (!input) return;
+	      const enabled = state === "on";
+	      input.checked = enabled;
+	      const label = document.getElementById(inputId + "State");
+	      if (label) {
+	        label.textContent = enabled ? "On" : "Off";
+	        label.classList.toggle("on", enabled);
+	      }
+	    }
+	    function updateBrokerWarning() {
+	      const enabled = ["mqttEastmeshAu", "mqttLetsmeshEu", "mqttLetsmeshUs"].filter((inputId) => {
+	        const input = document.getElementById(inputId);
+	        return input && input.checked;
+	      }).length;
+	      document.getElementById("mqttBrokerWarning").textContent = enabled >= 3 ? "Running all 3 MQTT servers is not recommended. Prefer 2 at most." : "";
+	    }
+	    async function loadBrokerState(cmd, inputId) {
+	      const result = await runCommand(cmd);
+	      if (!result.ok) return;
+	      setBrokerToggle(inputId, parseReplyValue(result.text));
+	      updateBrokerWarning();
+	    }
     async function refreshStats() {
       const getStatsBtn = document.getElementById("getStatsBtn");
       getStatsBtn.disabled = true;
@@ -898,19 +983,22 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       }
       token = text.trim();
       showAuthedUi(true);
-      try {
-        applyBootstrapData(await fetchJson("/api/bootstrap"));
-      } catch (_) {
-        await Promise.all([
-          loadField("get name", "nodeName"),
-          loadField("get mqtt.iata", "mqttIata"),
-          loadField("get mqtt.owner", "mqttOwner"),
-          loadField("get mqtt.email", "mqttEmail"),
-          loadField("get advert.interval", "advertInterval"),
-          loadField("get flood.advert.interval", "floodInterval"),
-          loadField("get flood.max", "floodMax")
-        ]);
-      }
+	      try {
+	        applyBootstrapData(await fetchJson("/api/bootstrap"));
+	      } catch (_) {
+	        await Promise.all([
+	          loadField("get name", "nodeName"),
+	          loadField("get mqtt.iata", "mqttIata"),
+	          loadField("get mqtt.owner", "mqttOwner"),
+	          loadField("get mqtt.email", "mqttEmail"),
+	          loadBrokerState("get mqtt.eastmesh-au", "mqttEastmeshAu"),
+	          loadBrokerState("get mqtt.letsmesh-eu", "mqttLetsmeshEu"),
+	          loadBrokerState("get mqtt.letsmesh-us", "mqttLetsmeshUs"),
+	          loadField("get advert.interval", "advertInterval"),
+	          loadField("get flood.advert.interval", "floodInterval"),
+	          loadField("get flood.max", "floodMax")
+	        ]);
+	      }
     };
     document.getElementById("password").addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
@@ -926,13 +1014,22 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
         document.getElementById("runBtn").click();
       }
     });
-    document.querySelectorAll("[data-cmd]").forEach((btn) => btn.onclick = () => runCommand(btn.dataset.cmd));
-    document.querySelectorAll("[data-prefix]").forEach((btn) => btn.onclick = () => runPrefixed(btn.dataset.prefix, btn.dataset.input));
-    document.querySelectorAll("[data-load-cmd]").forEach((btn) => btn.onclick = () => loadField(btn.dataset.loadCmd, btn.dataset.loadInput, btn.dataset.loadFormat));
-    document.getElementById("saveOwnerInfo").onclick = () => {
-      const value = document.getElementById("ownerInfo").value.replace(/\n/g, "|");
-      runCommand("set owner.info " + value);
-    };
+	    document.querySelectorAll("[data-cmd]").forEach((btn) => btn.onclick = () => runCommand(btn.dataset.cmd));
+	    document.querySelectorAll("[data-prefix]").forEach((btn) => btn.onclick = () => runPrefixed(btn.dataset.prefix, btn.dataset.input));
+	    document.querySelectorAll("[data-load-cmd]").forEach((btn) => btn.onclick = () => loadField(btn.dataset.loadCmd, btn.dataset.loadInput, btn.dataset.loadFormat));
+	    document.querySelectorAll("[data-broker-on]").forEach((input) => input.addEventListener("change", () => {
+	      const label = document.getElementById(input.id + "State");
+	      if (label) {
+	        label.textContent = input.checked ? "On" : "Off";
+	        label.classList.toggle("on", input.checked);
+	      }
+	      updateBrokerWarning();
+	      runCommand(input.checked ? input.dataset.brokerOn : input.dataset.brokerOff);
+	    }));
+	    document.getElementById("saveOwnerInfo").onclick = () => {
+	      const value = document.getElementById("ownerInfo").value.replace(/\n/g, "|");
+	      runCommand("set owner.info " + value);
+	    };
     document.getElementById("rebootBtn").onclick = async () => {
       if (confirm("Reboot the repeater now?")) {
         await runCommand("reboot");
@@ -1127,15 +1224,18 @@ esp_err_t WebPanelServer::handleBootstrap(httpd_req_t* req) {
   const struct {
     const char* key;
     const char* command;
-  } fields[] = {
-      {"name", "get name"},
-      {"mqtt_iata", "get mqtt.iata"},
-      {"mqtt_owner", "get mqtt.owner"},
-      {"mqtt_email", "get mqtt.email"},
-      {"advert_interval", "get advert.interval"},
-      {"flood_interval", "get flood.advert.interval"},
-      {"flood_max", "get flood.max"},
-  };
+	  } fields[] = {
+	      {"name", "get name"},
+	      {"mqtt_iata", "get mqtt.iata"},
+	      {"mqtt_owner", "get mqtt.owner"},
+	      {"mqtt_email", "get mqtt.email"},
+	      {"mqtt_eastmesh_au", "get mqtt.eastmesh-au"},
+	      {"mqtt_letsmesh_eu", "get mqtt.letsmesh-eu"},
+	      {"mqtt_letsmesh_us", "get mqtt.letsmesh-us"},
+	      {"advert_interval", "get advert.interval"},
+	      {"flood_interval", "get flood.advert.interval"},
+	      {"flood_max", "get flood.max"},
+	  };
 
   size_t offset = 0;
   json[offset++] = '{';

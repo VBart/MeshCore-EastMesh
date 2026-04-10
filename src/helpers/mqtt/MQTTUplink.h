@@ -77,6 +77,7 @@ public:
   const char* getOwnerEmail() const { return _prefs.owner_email; }
   void formatWifiStatusReply(char* reply, size_t reply_size) const;
   void reconnectWifi();
+  bool sendStatusNow();
 
 private:
 #if defined(ESP_PLATFORM)
@@ -92,6 +93,7 @@ private:
     const BrokerSpec* spec;
     esp_mqtt_client_handle_t client;
     bool connected;
+    bool connect_announced;
     unsigned long last_connect_attempt;
     time_t token_expires_at;
     char username[70];
