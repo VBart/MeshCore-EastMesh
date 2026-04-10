@@ -90,6 +90,12 @@ Legacy dotted aliases are also accepted:
 
 - `memory`
   - shows current heap and PSRAM usage
+- `stats-core`
+  - shows battery, uptime, sticky error count, and outbound queue depth
+- `stats-radio`
+  - shows radio noise floor, last RSSI, last SNR, and TX/RX airtime
+- `stats-packets`
+  - shows packet receive/send totals, flood/direct breakdown, and receive errors
 
 ## Web Panel Allowlisted Commands
 
@@ -104,6 +110,9 @@ That allowlist currently includes:
 - `reboot`
 - `start ota`
 - `memory`
+- `stats-core`
+- `stats-radio`
+- `stats-packets`
 - `get wifi.status`
 - `get wifi.powersaving`
 - `get mqtt.iata`

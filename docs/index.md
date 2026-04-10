@@ -9,7 +9,9 @@ MeshCore-EastMesh keeps the upstream MeshCore firmware intact and adds an EastMe
 ## Start Here
 
 - [Download and Flash Releases](./releases.md)
+- [Use the Repeater Web Panel](./web-panel.md)
 - [Build Locally With uv](./local-builds.md)
+- [Custom CLI Commands](./custom-cli.md)
 
 ## Current Scope
 
