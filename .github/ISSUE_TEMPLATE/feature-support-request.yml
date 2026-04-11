@@ -1,0 +1,82 @@
+name: Feature / Support Request
+description: Request a feature or report a board-specific support need.
+title: "[Feature/Support]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for feature requests and board-specific support needs.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What do you want to add or what do you need help with?
+      placeholder: Briefly describe the request or issue.
+    validations:
+      required: true
+
+  - type: input
+    id: board
+    attributes:
+      label: Board
+      description: Board model and revision, if known.
+      placeholder: e.g. Heltec WiFi LoRa 32 V3.2
+    validations:
+      required: false
+
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware Target
+      description: Firmware environment or binary name, if known.
+      placeholder: e.g. Heltec_v3_repeater_mqtt
+    validations:
+      required: false
+
+  - type: input
+    id: power
+    attributes:
+      label: Power Source
+      description: How is the board powered?
+      placeholder: e.g. USB only, LiPo only, USB + LiPo
+    validations:
+      required: false
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Current Behavior
+      description: What is happening now?
+      placeholder: Describe the current behavior, readings, LEDs, errors, etc.
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect instead?
+      placeholder: Describe the expected result.
+    validations:
+      required: false
+
+  - type: textarea
+    id: comparison
+    attributes:
+      label: Comparison
+      description: If relevant, does upstream MeshCore or another firmware behave differently?
+      placeholder: Include repo/branch/target details if you compared multiple builds.
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs Or Screenshots
+      description: Paste logs or attach screenshots/photos if helpful.
+      placeholder: Add CLI output, boot logs, screenshots, or photos here.
+    validations:
+      required: false

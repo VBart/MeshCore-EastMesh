@@ -145,6 +145,7 @@ uv run --group docs zensical build
 - CLI controls for:
   - WiFi credentials
   - WiFi powersaving
+  - board battery reporting on supported targets
   - MQTT endpoint enablement
   - MQTT packet and raw publishing
   - owner public key and email

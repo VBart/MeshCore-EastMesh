@@ -19,11 +19,14 @@
 class HeltecV3Board : public ESP32Board {
 private:
   bool adc_active_state;
+  bool battery_reporting_enabled;
 
 public:
   RefCountedDigitalPin periph_power;
 
-  HeltecV3Board() : periph_power(PIN_VEXT_EN) { }
+  HeltecV3Board() : adc_active_state(false),
+                    battery_reporting_enabled(true),
+                    periph_power(PIN_VEXT_EN) { }
 
   void begin() {
     ESP32Board::begin();
@@ -77,6 +80,10 @@ public:
   }
 
   uint16_t getBattMilliVolts() override {
+    if (!battery_reporting_enabled) {
+      return 0;
+    }
+
     analogReadResolution(10);
     digitalWrite(PIN_ADC_CTRL, adc_active_state);
 
@@ -88,7 +95,28 @@ public:
 
     digitalWrite(PIN_ADC_CTRL, !adc_active_state);
 
-    return (5.42 * (3.3 / 1024.0) * raw) * 1000;
+    uint16_t mv = (5.42 * (3.3 / 1024.0) * raw) * 1000;
+
+    // Heltec V3 USB-powered boards without a battery can bias or float the
+    // VBAT sense rail, which shows up as an impossible LiPo voltage.
+    if (mv > 4400) {
+      return 0;
+    }
+
+    return mv;
+  }
+
+  bool supportsBatteryReporting() const override {
+    return true;
+  }
+
+  bool setBatteryReporting(bool enabled) override {
+    battery_reporting_enabled = enabled;
+    return true;
+  }
+
+  bool isBatteryReportingEnabled() const override {
+    return battery_reporting_enabled;
   }
 
   const char* getManufacturerName() const override {

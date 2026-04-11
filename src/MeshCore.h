@@ -44,6 +44,9 @@ namespace mesh {
 class MainBoard {
 public:
   virtual uint16_t getBattMilliVolts() = 0;
+  virtual bool supportsBatteryReporting() const { return false; }
+  virtual bool setBatteryReporting(bool enabled) { (void)enabled; return false; }
+  virtual bool isBatteryReportingEnabled() const { return true; }
   virtual float getMCUTemperature() { return NAN; }
   virtual bool setAdcMultiplier(float multiplier) { return false; };
   virtual float getAdcMultiplier() const { return 0.0f; }

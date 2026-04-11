@@ -102,6 +102,16 @@ Legacy dotted aliases are also accepted:
 - `stats-packets`
   - shows packet receive/send totals, flood/direct breakdown, and receive errors
 
+### Board Battery Reporting
+
+- `get battery.reporting`
+  - shows whether board battery reporting is enabled
+  - support is board-dependent
+- `set battery.reporting on|off`
+  - enables or disables battery voltage reporting on supported boards
+  - currently useful for Heltec V3 boards where USB-only power can produce misleading battery readings
+  - if your board needs this too, open an issue and support can be added board-by-board
+
 ## Web Panel Allowlisted Commands
 
 When the repeater web panel is enabled, it only allows a limited command set.
