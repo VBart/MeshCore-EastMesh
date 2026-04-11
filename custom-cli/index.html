@@ -520,6 +520,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#board-battery-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Board Battery Reporting
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -684,6 +695,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#board-battery-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Board Battery Reporting
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -832,6 +854,16 @@
 <li>shows radio noise floor, last RSSI, last SNR, and TX/RX airtime</li>
 <li><code>stats-packets</code></li>
 <li>shows packet receive/send totals, flood/direct breakdown, and receive errors</li>
+</ul>
+<h3 id="board-battery-reporting">Board Battery Reporting<a class="headerlink" href="#board-battery-reporting" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>get battery.reporting</code></li>
+<li>shows whether board battery reporting is enabled</li>
+<li>support is board-dependent</li>
+<li><code>set battery.reporting on|off</code></li>
+<li>enables or disables battery voltage reporting on supported boards</li>
+<li>currently useful for Heltec V3 boards where USB-only power can produce misleading battery readings</li>
+<li>if your board needs this too, open an issue and support can be added board-by-board</li>
 </ul>
 <h2 id="web-panel-allowlisted-commands">Web Panel Allowlisted Commands<a class="headerlink" href="#web-panel-allowlisted-commands" title="Permanent link">&para;</a></h2>
 <p>When the repeater web panel is enabled, it only allows a limited command set.</p>
