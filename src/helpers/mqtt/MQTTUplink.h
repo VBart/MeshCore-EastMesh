@@ -42,7 +42,8 @@ public:
   void begin(FILESYSTEM* fs);
   void end();
   void loop(const MQTTStatusSnapshot& snapshot);
-  void publishPacket(const mesh::Packet& packet, bool is_tx, int rssi, float snr);
+  void publishPacket(const mesh::Packet& packet, bool is_tx, int rssi, float snr, int score = -1,
+                     int duration = -1);
 
   bool isRunning() const { return _running; }
   bool isActive() const;
@@ -97,11 +98,9 @@ private:
     unsigned long last_connect_attempt;
     time_t token_expires_at;
     char username[70];
-    char token[512];
+    char* token;
     char client_id[48];
     char status_topic[128];
-    char packets_topic[128];
-    char raw_topic[128];
     char offline_payload[256];
   };
 #endif
@@ -126,6 +125,7 @@ private:
   static constexpr uint8_t kEastmeshBit = 0x01;
   static constexpr uint8_t kLetsmeshEuBit = 0x02;
   static constexpr uint8_t kLetsmeshUsBit = 0x04;
+  static constexpr uint8_t kMaxEnabledBrokers = 2;
   static const BrokerSpec kBrokerSpecs[3];
 
   BrokerState _brokers[3];
@@ -136,7 +136,10 @@ private:
   void ensureWifi();
   void updateTimeSync();
   bool hasEnabledBroker() const;
+  static uint8_t normalizeEnabledMask(uint8_t mask);
+  void formatTopic(char* dst, size_t dst_size, const char* leaf) const;
   void refreshIdentityStrings();
+  void refreshBrokerIdentity(BrokerState& broker);
   void refreshBrokerState(BrokerState& broker);
   void ensureBroker(BrokerState& broker);
   void destroyBroker(BrokerState& broker);
@@ -145,8 +148,8 @@ private:
   void publishOnlineStatus(BrokerState& broker);
   void queuePublish(BrokerState& broker, const char* topic, const char* payload, bool retain);
   int buildStatusJson(char* buffer, size_t buffer_size, bool online) const;
-  int buildPacketJson(char* buffer, size_t buffer_size, const mesh::Packet& packet, bool is_tx, int rssi,
-                      float snr) const;
+  int buildPacketJson(char* buffer, size_t buffer_size, const mesh::Packet& packet, bool is_tx, int rssi, float snr,
+                      int score, int duration) const;
   int buildRawJson(char* buffer, size_t buffer_size, const mesh::Packet& packet, bool is_tx, int rssi, float snr) const;
   static wifi_ps_type_t toEspPowerSave(uint8_t mode);
   static const char* getPowerSaveLabel(uint8_t mode);

@@ -87,8 +87,13 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     file.read((uint8_t *)&_prefs->discovery_mod_timestamp, sizeof(_prefs->discovery_mod_timestamp)); // 162
     file.read((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
     file.read((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
-    file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    // next: 291
+    if (file.available() >= (int)sizeof(_prefs->battery_reporting_enabled)) {
+      file.read((uint8_t *)&_prefs->battery_reporting_enabled, sizeof(_prefs->battery_reporting_enabled)); // 290
+    }
+    if (file.available() >= (int)sizeof(_prefs->rx_boosted_gain)) {
+      file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));            // 291
+    }
+    // next: 292
 
     // sanitise bad pref values
     _prefs->rx_delay_base = constrain(_prefs->rx_delay_base, 0, 20.0f);
@@ -112,6 +117,7 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     _prefs->bridge_channel = constrain(_prefs->bridge_channel, 0, 14);
 
     _prefs->powersaving_enabled = constrain(_prefs->powersaving_enabled, 0, 1);
+    _prefs->battery_reporting_enabled = constrain(_prefs->battery_reporting_enabled, 0, 1);
 
     _prefs->gps_enabled = constrain(_prefs->gps_enabled, 0, 1);
     _prefs->advert_loc_policy = constrain(_prefs->advert_loc_policy, 0, 2);
@@ -178,8 +184,9 @@ void CommonCLI::savePrefs(FILESYSTEM* fs) {
     file.write((uint8_t *)&_prefs->discovery_mod_timestamp, sizeof(_prefs->discovery_mod_timestamp)); // 162
     file.write((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
     file.write((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
-    file.write((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    // next: 291
+    file.write((uint8_t *)&_prefs->battery_reporting_enabled, sizeof(_prefs->battery_reporting_enabled)); // 290
+    file.write((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 291
+    // next: 292
 
     file.close();
   }
@@ -420,6 +427,12 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, const char* command, ch
           strcpy(reply, "Error: unsupported by this board");
         } else {
           sprintf(reply, "> %.3f", adc_mult);
+        }
+      } else if (memcmp(config, "battery.reporting", 17) == 0) {
+        if (_board->supportsBatteryReporting()) {
+          sprintf(reply, "> %s", _board->isBatteryReportingEnabled() ? "on" : "off");
+        } else {
+          strcpy(reply, "Error: unsupported by this board");
         }
       // Power management commands
       } else if (memcmp(config, "pwrmgt.support", 14) == 0) {
@@ -717,6 +730,15 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, const char* command, ch
           _prefs->adc_multiplier = 0.0f;
           strcpy(reply, "Error: unsupported by this board");
         };
+      } else if (memcmp(config, "battery.reporting ", 18) == 0) {
+        bool enabled = memcmp(&config[18], "on", 2) == 0;
+        if (_board->setBatteryReporting(enabled)) {
+          _prefs->battery_reporting_enabled = enabled ? 1 : 0;
+          savePrefs();
+          sprintf(reply, "OK - battery reporting %s", enabled ? "on" : "off");
+        } else {
+          strcpy(reply, "Error: unsupported by this board");
+        }
       } else {
         sprintf(reply, "unknown config: %s", config);
       }

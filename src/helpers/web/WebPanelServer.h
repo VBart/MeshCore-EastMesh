@@ -28,6 +28,8 @@ public:
   void stop();
   bool isRunning() const;
   bool hasSessionToken() const;
+  bool shouldAutoLock(unsigned long now_ms) const;
+  void lockSession();
 
 private:
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
@@ -38,9 +40,11 @@ private:
   WebPanelCommandRunner* _runner;
   httpd_handle_t _server;
   char _token[33];
+  unsigned long _last_activity_ms;
   RouteContext _route_context;
 
   static esp_err_t handleIndex(httpd_req_t* req);
+  static esp_err_t handleApp(httpd_req_t* req);
   static esp_err_t handleLogin(httpd_req_t* req);
   static esp_err_t handleCommand(httpd_req_t* req);
   static esp_err_t handleBootstrap(httpd_req_t* req);
@@ -49,6 +53,7 @@ private:
   bool readRequestBody(httpd_req_t* req, char* buffer, size_t buffer_size) const;
   void refreshToken();
   bool isAuthorized(httpd_req_t* req) const;
+  void noteActivity();
 #else
   WebPanelCommandRunner* _runner;
 #endif

@@ -51,6 +51,7 @@ namespace {
 constexpr unsigned long kWifiRetryMillis = 15000;
 constexpr unsigned long kWifiConnectTimeoutMillis = 45000;
 constexpr unsigned long kBrokerRetryMillis = 10000;
+constexpr size_t kBrokerTokenSize = 640;
 constexpr time_t kTokenLifetimeSecs = 3600;
 constexpr time_t kTokenRefreshSlackSecs = 300;
 constexpr time_t kMinSaneEpoch = 1735689600;  // 2025-01-01T00:00:00Z
@@ -144,6 +145,28 @@ bool MQTTUplink::hasEnabledBroker() const {
   return (_prefs.enabled_mask & 0x07) != 0;
 }
 
+uint8_t MQTTUplink::normalizeEnabledMask(uint8_t mask) {
+  uint8_t normalized = 0;
+  uint8_t count = 0;
+  for (const BrokerSpec& spec : kBrokerSpecs) {
+    if ((mask & spec.bit) != 0) {
+      if (count >= kMaxEnabledBrokers) {
+        break;
+      }
+      normalized |= spec.bit;
+      ++count;
+    }
+  }
+  return normalized;
+}
+
+void MQTTUplink::formatTopic(char* dst, size_t dst_size, const char* leaf) const {
+  if (dst == nullptr || dst_size == 0) {
+    return;
+  }
+  snprintf(dst, dst_size, "meshcore/%s/%s/%s", _prefs.iata, _device_id, leaf);
+}
+
 bool MQTTUplink::isActive() const {
   return _running && hasEnabledBroker();
 }
@@ -171,7 +194,7 @@ bool MQTTUplink::sendStatusNow() {
 
   bool any_connected = false;
   for (const BrokerState& broker : _brokers) {
-    if ((_prefs.enabled_mask & broker.spec->bit) != 0 && broker.connected && broker.client != nullptr) {
+    if (broker.spec != nullptr && broker.connected && broker.client != nullptr) {
       any_connected = true;
       break;
     }
@@ -296,14 +319,18 @@ const char* MQTTUplink::getPowerSaveLabel(uint8_t mode) {
 
 void MQTTUplink::refreshIdentityStrings() {
   bytesToHexUpper(_identity->pub_key, PUB_KEY_SIZE, _device_id, sizeof(_device_id));
-  for (size_t i = 0; i < 3; ++i) {
-    BrokerState& broker = _brokers[i];
-    snprintf(broker.username, sizeof(broker.username), "v1_%s", _device_id);
-    snprintf(broker.client_id, sizeof(broker.client_id), "mqtt_%s-%.6s", broker.spec->key, _device_id);
-    snprintf(broker.status_topic, sizeof(broker.status_topic), "meshcore/%s/%s/status", _prefs.iata, _device_id);
-    snprintf(broker.packets_topic, sizeof(broker.packets_topic), "meshcore/%s/%s/packets", _prefs.iata, _device_id);
-    snprintf(broker.raw_topic, sizeof(broker.raw_topic), "meshcore/%s/%s/raw", _prefs.iata, _device_id);
+  for (BrokerState& broker : _brokers) {
+    refreshBrokerIdentity(broker);
   }
+}
+
+void MQTTUplink::refreshBrokerIdentity(BrokerState& broker) {
+  if (broker.spec == nullptr) {
+    return;
+  }
+  snprintf(broker.username, sizeof(broker.username), "v1_%s", _device_id);
+  snprintf(broker.client_id, sizeof(broker.client_id), "mqtt_%s-%.6s", broker.spec->key, _device_id);
+  formatTopic(broker.status_topic, sizeof(broker.status_topic), "status");
 }
 
 void MQTTUplink::refreshBrokerState(BrokerState& broker) {
@@ -333,11 +360,21 @@ bool MQTTUplink::refreshToken(BrokerState& broker) {
     return false;
   }
 
+  if (broker.token == nullptr) {
+    broker.token = allocScratchBuffer(kBrokerTokenSize);
+    if (broker.token == nullptr) {
+      MQTT_LOG("%s token alloc failed", broker.spec->label);
+      return false;
+    }
+  }
+
   time_t expires_at = now + kTokenLifetimeSecs;
   const char* owner = _prefs.owner_public_key[0] ? _prefs.owner_public_key : nullptr;
   const char* email = _prefs.owner_email[0] ? _prefs.owner_email : nullptr;
-  if (!JWTHelper::createAuthToken(*_identity, broker.spec->host, now, expires_at, broker.token, sizeof(broker.token),
+  if (!JWTHelper::createAuthToken(*_identity, broker.spec->host, now, expires_at, broker.token, kBrokerTokenSize,
                                   owner, email)) {
+    freeScratchBuffer(broker.token);
+    broker.token = nullptr;
     MQTT_LOG("%s token creation failed", broker.spec->label);
     return false;
   }
@@ -354,8 +391,11 @@ void MQTTUplink::destroyBroker(BrokerState& broker) {
     esp_mqtt_client_destroy(broker.client);
     broker.client = nullptr;
   }
+  freeScratchBuffer(broker.token);
+  broker.token = nullptr;
   broker.connected = false;
   broker.connect_announced = false;
+  broker.token_expires_at = 0;
 }
 
 void MQTTUplink::queuePublish(BrokerState& broker, const char* topic, const char* payload, bool retain) {
@@ -393,7 +433,7 @@ int MQTTUplink::buildStatusJson(char* buffer, size_t buffer_size, bool online) c
 }
 
 int MQTTUplink::buildPacketJson(char* buffer, size_t buffer_size, const mesh::Packet& packet, bool is_tx, int rssi,
-                                float snr) const {
+                                float snr, int score, int duration) const {
   uint8_t raw[256];
   int raw_len = packet.writeTo(raw);
   char* raw_hex = allocScratchBuffer(520);
@@ -423,24 +463,47 @@ int MQTTUplink::buildPacketJson(char* buffer, size_t buffer_size, const mesh::Pa
     char path_info[128];
     snprintf(path_info, sizeof(path_info), "path_%dx%d_%db", (int)packet.getPathHashCount(),
              (int)packet.getPathHashSize(), (int)packet.getPathByteLen());
-    int len = snprintf(buffer, buffer_size,
-                       "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
-                       "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
-                       "\"route\":\"D\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
-                       "\"hash\":\"%s\",\"path\":\"%s\"}",
-                       origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len, packet.getPayloadType(),
-                       packet.payload_len, raw_hex, snr, rssi, hash_hex, path_info);
+    int len;
+    if (score >= 0) {
+      len = snprintf(buffer, buffer_size,
+                     "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
+                     "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
+                     "\"route\":\"D\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
+                     "\"score\":\"%d\",\"duration\":\"%d\",\"hash\":\"%s\",\"path\":\"%s\"}",
+                     origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len,
+                     packet.getPayloadType(), packet.payload_len, raw_hex, snr, rssi, score, duration, hash_hex,
+                     path_info);
+    } else {
+      len = snprintf(buffer, buffer_size,
+                     "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
+                     "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
+                     "\"route\":\"D\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
+                     "\"hash\":\"%s\",\"path\":\"%s\"}",
+                     origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len,
+                     packet.getPayloadType(), packet.payload_len, raw_hex, snr, rssi, hash_hex, path_info);
+    }
     freeScratchBuffer(raw_hex);
     return len;
   }
 
-  int len = snprintf(buffer, buffer_size,
-                     "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
-                     "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
-                     "\"route\":\"F\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
-                     "\"hash\":\"%s\"}",
-                     origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len, packet.getPayloadType(),
-                     packet.payload_len, raw_hex, snr, rssi, hash_hex);
+  int len;
+  if (score >= 0) {
+    len = snprintf(buffer, buffer_size,
+                   "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
+                   "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
+                   "\"route\":\"F\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
+                   "\"score\":\"%d\",\"duration\":\"%d\",\"hash\":\"%s\"}",
+                   origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len,
+                   packet.getPayloadType(), packet.payload_len, raw_hex, snr, rssi, score, duration, hash_hex);
+  } else {
+    len = snprintf(buffer, buffer_size,
+                   "{\"origin\":\"%s\",\"origin_id\":\"%s\",\"timestamp\":\"%s\",\"type\":\"PACKET\","
+                   "\"direction\":\"%s\",\"time\":\"%s\",\"date\":\"%s\",\"len\":\"%d\",\"packet_type\":\"%u\","
+                   "\"route\":\"F\",\"payload_len\":\"%u\",\"raw\":\"%s\",\"SNR\":\"%.1f\",\"RSSI\":\"%d\","
+                   "\"hash\":\"%s\"}",
+                   origin, _device_id, ts, is_tx ? "tx" : "rx", time_only, date_only, raw_len,
+                   packet.getPayloadType(), packet.payload_len, raw_hex, snr, rssi, hash_hex);
+  }
   freeScratchBuffer(raw_hex);
   return len;
 }
@@ -493,7 +556,7 @@ void MQTTUplink::publishStatus(bool online) {
     return;
   }
   for (BrokerState& broker : _brokers) {
-    if ((_prefs.enabled_mask & broker.spec->bit) != 0) {
+    if (broker.spec != nullptr) {
       queuePublish(broker, broker.status_topic, payload, true);
     }
   }
@@ -624,6 +687,9 @@ void MQTTUplink::updateTimeSync() {
 }
 
 void MQTTUplink::ensureBroker(BrokerState& broker) {
+  if (broker.spec == nullptr) {
+    return;
+  }
   bool enabled = (_prefs.enabled_mask & broker.spec->bit) != 0;
   if (!enabled) {
     destroyBroker(broker);
@@ -674,8 +740,8 @@ void MQTTUplink::ensureBroker(BrokerState& broker) {
   cfg.network.reconnect_timeout_ms = 10000;
   cfg.network.timeout_ms = 10000;
   cfg.network.disable_auto_reconnect = false;
-  cfg.buffer.size = 1024;
-  cfg.buffer.out_size = 1024;
+  cfg.buffer.size = 768;
+  cfg.buffer.out_size = 1280;
 #else
   cfg.host = broker.spec->host;
   cfg.port = 443;
@@ -683,8 +749,8 @@ void MQTTUplink::ensureBroker(BrokerState& broker) {
   cfg.password = broker.token;
   cfg.client_id = broker.client_id;
   cfg.keepalive = 30;
-  cfg.buffer_size = 1024;
-  cfg.out_buffer_size = 1024;
+  cfg.buffer_size = 768;
+  cfg.out_buffer_size = 1280;
   cfg.reconnect_timeout_ms = 10000;
   cfg.network_timeout_ms = 10000;
   cfg.disable_auto_reconnect = false;
@@ -715,6 +781,11 @@ void MQTTUplink::ensureBroker(BrokerState& broker) {
 void MQTTUplink::begin(FILESYSTEM* fs) {
   _fs = fs;
   MQTTPrefsStore::load(_fs, _prefs);
+  uint8_t normalized_mask = normalizeEnabledMask(_prefs.enabled_mask & 0x07);
+  if (normalized_mask != _prefs.enabled_mask) {
+    _prefs.enabled_mask = normalized_mask;
+    savePrefs();
+  }
   refreshIdentityStrings();
   _running = true;
   _last_status_publish = millis();
@@ -748,6 +819,10 @@ void MQTTUplink::loop(const MQTTStatusSnapshot& snapshot) {
   ensureWifi();
   updateTimeSync();
   ensureWebServer();
+  if (_web_panel.isRunning() && _web_panel.shouldAutoLock(millis())) {
+    WEB_LOG("idle lock");
+    _web_panel.lockSession();
+  }
 
   for (BrokerState& broker : _brokers) {
     ensureBroker(broker);
@@ -767,29 +842,31 @@ void MQTTUplink::loop(const MQTTStatusSnapshot& snapshot) {
   }
 }
 
-void MQTTUplink::publishPacket(const mesh::Packet& packet, bool is_tx, int rssi, float snr) {
+void MQTTUplink::publishPacket(const mesh::Packet& packet, bool is_tx, int rssi, float snr, int score, int duration) {
   if (!_running || !_have_time_sync || !hasEnabledBroker() || !_prefs.packets_enabled) {
     return;
   }
   if (is_tx && !_prefs.tx_enabled) {
     return;
   }
-  MQTT_LOG("packet dir=%s type=%u payload_len=%u rssi=%d snr=%.1f", is_tx ? "tx" : "rx", packet.getPayloadType(),
-           packet.payload_len, rssi, snr);
+  MQTT_LOG("packet dir=%s type=%u payload_len=%u rssi=%d snr=%.1f score=%d duration=%d",
+           is_tx ? "tx" : "rx", packet.getPayloadType(), packet.payload_len, rssi, snr, score, duration);
 
   char* payload = allocScratchBuffer(1280);
   if (payload == nullptr) {
     return;
   }
-  int len = buildPacketJson(payload, 1280, packet, is_tx, rssi, snr);
+  int len = buildPacketJson(payload, 1280, packet, is_tx, rssi, snr, score, duration);
   if (len <= 0 || static_cast<size_t>(len) >= 1280) {
     freeScratchBuffer(payload);
     return;
   }
 
+  char topic[128];
+  formatTopic(topic, sizeof(topic), "packets");
   for (BrokerState& broker : _brokers) {
-    if ((_prefs.enabled_mask & broker.spec->bit) != 0) {
-      queuePublish(broker, broker.packets_topic, payload, false);
+    if (broker.spec != nullptr) {
+      queuePublish(broker, topic, payload, false);
     }
   }
   freeScratchBuffer(payload);
@@ -808,26 +885,37 @@ void MQTTUplink::publishPacket(const mesh::Packet& packet, bool is_tx, int rssi,
     return;
   }
 
+  formatTopic(topic, sizeof(topic), "raw");
   for (BrokerState& broker : _brokers) {
-    if ((_prefs.enabled_mask & broker.spec->bit) != 0) {
-      queuePublish(broker, broker.raw_topic, raw_payload, false);
+    if (broker.spec != nullptr) {
+      queuePublish(broker, topic, raw_payload, false);
     }
   }
   freeScratchBuffer(raw_payload);
 }
 
 void MQTTUplink::formatStatusReply(char* reply, size_t reply_size) const {
-  auto broker_state = [this](const BrokerState& broker) -> const char* {
-    if ((_prefs.enabled_mask & broker.spec->bit) == 0) {
+  auto broker_state = [this](uint8_t bit) -> const char* {
+    if ((_prefs.enabled_mask & bit) == 0) {
       return "off";
     }
-    if (broker.connected) {
+    const BrokerState* broker = nullptr;
+    for (const BrokerState& candidate : _brokers) {
+      if (candidate.spec != nullptr && candidate.spec->bit == bit) {
+        broker = &candidate;
+        break;
+      }
+    }
+    if (broker == nullptr) {
+      return "retry";
+    }
+    if (broker->connected) {
       return "up";
     }
     if (WiFi.status() != WL_CONNECTED || !_have_time_sync) {
       return "wait";
     }
-    if (broker.client != nullptr) {
+    if (broker->client != nullptr) {
       return "conn";
     }
     return "retry";
@@ -835,7 +923,7 @@ void MQTTUplink::formatStatusReply(char* reply, size_t reply_size) const {
 
   snprintf(reply, reply_size, "> wifi:%s ntp:%s iata:%s eastmesh-au:%s letsmesh-eu:%s letsmesh-us:%s status:%s tx:%s",
            getWifiStateLabel(_prefs, _wifi_started), _have_time_sync ? "up" : "wait", _prefs.iata,
-           broker_state(_brokers[0]), broker_state(_brokers[1]), broker_state(_brokers[2]),
+           broker_state(kEastmeshBit), broker_state(kLetsmeshEuBit), broker_state(kLetsmeshUsBit),
            _prefs.status_enabled ? "on" : "off", _prefs.tx_enabled ? "on" : "off");
 }
 
@@ -865,11 +953,16 @@ void MQTTUplink::formatWebStatusReply(char* reply, size_t reply_size) const {
 }
 
 bool MQTTUplink::setEndpointEnabled(uint8_t bit, bool enabled) {
+  uint8_t next_mask = _prefs.enabled_mask & 0x07;
   if (enabled) {
-    _prefs.enabled_mask |= bit;
+    next_mask = normalizeEnabledMask(next_mask | bit);
+    if ((next_mask & bit) == 0) {
+      return false;
+    }
   } else {
-    _prefs.enabled_mask &= ~bit;
+    next_mask &= ~bit;
   }
+  _prefs.enabled_mask = next_mask;
   savePrefs();
   return true;
 }
@@ -904,6 +997,8 @@ bool MQTTUplink::setWebEnabled(bool enabled) {
   bool ok = savePrefs();
   if (_prefs.web_enabled != 0) {
     ensureWebServer();
+  } else {
+    stopWebServer();
   }
   return ok;
 #else
@@ -1074,7 +1169,7 @@ bool MQTTUplink::savePrefs() { return false; }
 void MQTTUplink::begin(FILESYSTEM*) {}
 void MQTTUplink::end() {}
 void MQTTUplink::loop(const MQTTStatusSnapshot&) {}
-void MQTTUplink::publishPacket(const mesh::Packet&, bool, int, float) {}
+void MQTTUplink::publishPacket(const mesh::Packet&, bool, int, float, int, int) {}
 void MQTTUplink::formatStatusReply(char* reply, size_t reply_size) const { snprintf(reply, reply_size, "> unsupported"); }
 void MQTTUplink::formatWebStatusReply(char* reply, size_t reply_size) const { snprintf(reply, reply_size, "> unsupported"); }
 bool MQTTUplink::setEndpointEnabled(uint8_t, bool) { return false; }

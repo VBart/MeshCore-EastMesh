@@ -462,7 +462,8 @@ void MyMesh::logRx(mesh::Packet *pkt, int len, float score) {
   }
 #endif
 #ifdef WITH_MQTT_UPLINK
-  mqtt.publishPacket(*pkt, false, (int)_radio->getLastRSSI(), _radio->getLastSNR());
+  mqtt.publishPacket(*pkt, false, (int)_radio->getLastRSSI(), _radio->getLastSNR(), (int)(score * 1000),
+                     (int)_radio->getEstAirtimeFor(len));
 #endif
 
   if (_logging) {
@@ -897,6 +898,7 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   _prefs.advert_loc_policy = ADVERT_LOC_PREFS;
 
   _prefs.adc_multiplier = 0.0f; // 0.0f means use default board multiplier
+  _prefs.battery_reporting_enabled = 1;
 
 #if defined(USE_SX1262) || defined(USE_SX1268)
 #ifdef SX126X_RX_BOOSTED_GAIN
@@ -942,6 +944,7 @@ void MyMesh::begin(FILESYSTEM *fs) {
   updateFloodAdvertTimer();
 
   board.setAdcMultiplier(_prefs.adc_multiplier);
+  board.setBatteryReporting(_prefs.battery_reporting_enabled);
 
 #if ENV_INCLUDE_GPS == 1
   applyGpsPrefs();
@@ -1408,14 +1411,23 @@ void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply
     mqtt.setStatusEnabled(memcmp(&command[16], "on", 2) == 0);
     strcpy(reply, "OK");
   } else if (memcmp(command, "set mqtt.eastmesh-au ", 21) == 0 || memcmp(command, "set mqtt.eastmesh.au ", 21) == 0) {
-    mqtt.setEndpointEnabled(0x01, memcmp(&command[21], "on", 2) == 0);
-    strcpy(reply, "OK");
+    if (mqtt.setEndpointEnabled(0x01, memcmp(&command[21], "on", 2) == 0)) {
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Err - max 2 mqtt brokers");
+    }
   } else if (memcmp(command, "set mqtt.letsmesh-eu ", 21) == 0 || memcmp(command, "set mqtt.letsmesh.eu ", 21) == 0) {
-    mqtt.setEndpointEnabled(0x02, memcmp(&command[21], "on", 2) == 0);
-    strcpy(reply, "OK");
+    if (mqtt.setEndpointEnabled(0x02, memcmp(&command[21], "on", 2) == 0)) {
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Err - max 2 mqtt brokers");
+    }
   } else if (memcmp(command, "set mqtt.letsmesh-us ", 21) == 0 || memcmp(command, "set mqtt.letsmesh.us ", 21) == 0) {
-    mqtt.setEndpointEnabled(0x04, memcmp(&command[21], "on", 2) == 0);
-    strcpy(reply, "OK");
+    if (mqtt.setEndpointEnabled(0x04, memcmp(&command[21], "on", 2) == 0)) {
+      strcpy(reply, "OK");
+    } else {
+      strcpy(reply, "Err - max 2 mqtt brokers");
+    }
 #endif
   } else{
     _cli.handleCommand(sender_timestamp, command, reply);  // common CLI commands
