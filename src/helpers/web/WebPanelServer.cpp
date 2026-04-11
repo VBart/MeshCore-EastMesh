@@ -12,11 +12,20 @@
 
 namespace {
 
-constexpr size_t kWebServerStackSize = 8192;
+#ifndef WEB_PANEL_STACK_SIZE
+  #define WEB_PANEL_STACK_SIZE 6144
+#endif
+
+#ifndef WEB_PANEL_IDLE_TIMEOUT_MS
+  #define WEB_PANEL_IDLE_TIMEOUT_MS (15UL * 60UL * 1000UL)
+#endif
+
+constexpr size_t kWebServerStackSize = WEB_PANEL_STACK_SIZE;
 constexpr size_t kWebPasswordBufferSize = 80;
 constexpr size_t kWebCommandBufferSize = 192;
 constexpr size_t kWebReplyBufferSize = 256;
-constexpr size_t kWebJsonBufferSize = 2048;
+constexpr size_t kWebPageChunkSize = 768;
+constexpr unsigned long kWebIdleTimeoutMs = WEB_PANEL_IDLE_TIMEOUT_MS;
 
 #if defined(MQTT_DEBUG) && MQTT_DEBUG
   #define WEB_PANEL_LOG(fmt, ...) Serial.printf("[WEB] " fmt "\n", ##__VA_ARGS__)
@@ -50,69 +59,173 @@ void bytesToHexUpper(const uint8_t* src, size_t len, char* dst, size_t dst_size)
   dst[(di < dst_size) ? di : (dst_size - 1)] = 0;
 }
 
-size_t appendJsonEscaped(char* dst, size_t dst_size, size_t offset, const char* src) {
-  if (dst == nullptr || dst_size == 0) {
-    return offset;
+esp_err_t sendChunk(httpd_req_t* req, const char* text) {
+  return httpd_resp_sendstr_chunk(req, text != nullptr ? text : "");
+}
+
+esp_err_t sendProgmemChunked(httpd_req_t* req, const char* text) {
+  if (text == nullptr) {
+    return httpd_resp_send_chunk(req, nullptr, 0);
   }
-  for (size_t i = 0; src != nullptr && src[i] != 0 && offset + 2 < dst_size; ++i) {
-    char c = src[i];
-    if (c == '\\' || c == '"') {
-      if (offset + 2 >= dst_size) break;
-      dst[offset++] = '\\';
-      dst[offset++] = c;
-    } else if (c == '\n') {
-      if (offset + 2 >= dst_size) break;
-      dst[offset++] = '\\';
-      dst[offset++] = 'n';
-    } else if (c == '\r') {
-      if (offset + 2 >= dst_size) break;
-      dst[offset++] = '\\';
-      dst[offset++] = 'r';
-    } else if (c == '\t') {
-      if (offset + 2 >= dst_size) break;
-      dst[offset++] = '\\';
-      dst[offset++] = 't';
-    } else {
-      dst[offset++] = c;
+
+  const size_t len = strlen(text);
+  size_t offset = 0;
+  while (offset < len) {
+    const size_t chunk_len = ((len - offset) > kWebPageChunkSize) ? kWebPageChunkSize : (len - offset);
+    if (httpd_resp_send_chunk(req, &text[offset], chunk_len) != ESP_OK) {
+      httpd_resp_send_chunk(req, nullptr, 0);
+      return ESP_FAIL;
     }
+    offset += chunk_len;
   }
-  dst[(offset < dst_size) ? offset : (dst_size - 1)] = 0;
-  return offset;
+  return httpd_resp_send_chunk(req, nullptr, 0);
 }
 
-bool appendJsonField(char* dst, size_t dst_size, size_t& offset, const char* key, const char* value, bool comma) {
-  int written = snprintf(&dst[offset], (offset < dst_size) ? (dst_size - offset) : 0, "%s\"%s\":\"", comma ? "," : "", key);
-  if (written < 0 || offset + static_cast<size_t>(written) >= dst_size) {
-    return false;
+esp_err_t sendJsonEscapedChunk(httpd_req_t* req, const char* src) {
+  char chunk[48];
+  size_t offset = 0;
+
+  for (size_t i = 0; src != nullptr && src[i] != 0; ++i) {
+    const char* escape = nullptr;
+    char c = src[i];
+    switch (c) {
+      case '\\':
+        escape = "\\\\";
+        break;
+      case '"':
+        escape = "\\\"";
+        break;
+      case '\n':
+        escape = "\\n";
+        break;
+      case '\r':
+        escape = "\\r";
+        break;
+      case '\t':
+        escape = "\\t";
+        break;
+      default:
+        break;
+    }
+
+    const char* fragment = escape;
+    char single[2] = {c, 0};
+    if (fragment == nullptr) {
+      fragment = single;
+    }
+    size_t frag_len = strlen(fragment);
+    if (offset + frag_len >= sizeof(chunk) - 1) {
+      chunk[offset] = 0;
+      if (sendChunk(req, chunk) != ESP_OK) {
+        return ESP_FAIL;
+      }
+      offset = 0;
+    }
+    memcpy(&chunk[offset], fragment, frag_len);
+    offset += frag_len;
   }
-  offset += static_cast<size_t>(written);
-  offset = appendJsonEscaped(dst, dst_size, offset, value != nullptr ? value : "");
-  if (offset + 2 >= dst_size) {
-    return false;
+
+  if (offset > 0) {
+    chunk[offset] = 0;
+    return sendChunk(req, chunk);
   }
-  dst[offset++] = '"';
-  dst[offset] = 0;
-  return true;
+  return ESP_OK;
 }
 
-bool appendJsonFieldRaw(char* dst, size_t dst_size, size_t& offset, const char* key, const char* value, bool comma) {
-  int written = snprintf(&dst[offset], (offset < dst_size) ? (dst_size - offset) : 0, "%s\"%s\":", comma ? "," : "", key);
-  if (written < 0 || offset + static_cast<size_t>(written) >= dst_size) {
-    return false;
+esp_err_t sendJsonFieldChunk(httpd_req_t* req, const char* key, const char* value, bool comma) {
+  char prefix[40];
+  int written = snprintf(prefix, sizeof(prefix), "%s\"%s\":\"", comma ? "," : "", key);
+  if (written < 0 || static_cast<size_t>(written) >= sizeof(prefix)) {
+    return ESP_FAIL;
   }
-  offset += static_cast<size_t>(written);
-  if (value == nullptr) {
-    value = "null";
+  if (sendChunk(req, prefix) != ESP_OK) {
+    return ESP_FAIL;
   }
-  written = snprintf(&dst[offset], (offset < dst_size) ? (dst_size - offset) : 0, "%s", value);
-  if (written < 0 || offset + static_cast<size_t>(written) >= dst_size) {
-    return false;
+  if (sendJsonEscapedChunk(req, value != nullptr ? value : "") != ESP_OK) {
+    return ESP_FAIL;
   }
-  offset += static_cast<size_t>(written);
-  return true;
+  return sendChunk(req, "\"");
 }
 
-const char kWebPanelHtml[] PROGMEM = R"HTML(
+const char kWebPanelLoginHtml[] PROGMEM = R"HTML(
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Repeater Login</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --accent:#2f8f4e;
+      --accent-hover:#3fae61;
+      --background:#f4f6f9;
+      --text:#1f2937;
+      --text-muted:#4b5563;
+      --border:rgba(0,0,0,.08);
+      --surface:#ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --accent:#36a167;
+        --accent-hover:#49c27d;
+        --background:#222222;
+        --text:#e6eaf0;
+        --text-muted:#9aa4b2;
+        --border:rgba(255,255,255,.08);
+        --surface:#303030;
+      }
+    }
+    html { min-height:100%; background:linear-gradient(180deg,var(--background),var(--surface)); background-repeat:no-repeat; background-attachment:fixed; }
+    body { min-height:100vh; margin:0; display:grid; place-items:center; background:transparent; color:var(--text); font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+    main { width:min(100%,420px); padding:20px; box-sizing:border-box; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+    h1 { margin:0 0 12px; font-size:22px; }
+    p { margin:0 0 16px; color:var(--text-muted); line-height:1.45; }
+    input, button { width:100%; min-height:46px; box-sizing:border-box; border-radius:10px; font:inherit; }
+    input { margin-bottom:12px; padding:12px; border:1px solid var(--border); background:transparent; color:var(--text); }
+    button { border:none; background:var(--accent); color:#fff; cursor:pointer; font-weight:700; }
+    button:hover { background:var(--accent-hover); }
+    #status { min-height:1.4em; margin-top:12px; color:#c94a4a; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>Repeater Config</h1>
+      <p>Use the repeater admin password to unlock the panel. Accept the self-signed certificate warning in your browser first.</p>
+      <input id="password" type="password" placeholder="Admin password" autocomplete="current-password">
+      <button id="loginBtn">Unlock</button>
+      <div id="status"></div>
+    </section>
+  </main>
+  <script>
+    const statusEl = document.getElementById("status");
+    async function login() {
+      const pwd = document.getElementById("password").value;
+      const res = await fetch("/login", { method:"POST", body: pwd });
+      const text = await res.text();
+      if (!res.ok) {
+        statusEl.textContent = text || "Access denied";
+        return;
+      }
+      sessionStorage.setItem("repeater-token", text.trim());
+      window.location.replace("/app");
+    }
+    document.getElementById("loginBtn").onclick = () => login();
+    document.getElementById("password").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        login();
+      }
+    });
+  </script>
+</body>
+</html>
+)HTML";
+
+const char kWebPanelAppHtml[] PROGMEM = R"HTML(
 <!doctype html>
 <html>
 <head>
@@ -190,20 +303,35 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
     .placeholder-slot { display:block; width:44px; height:44px; }
     .savebtn { width:100%; background:var(--accent); color:var(--button-text); border:none; }
     .savebtn:hover { background:var(--accent-hover); }
+    .broker-stack { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:12px; align-items:start; }
+    .broker-group { display:grid; gap:8px; align-content:start; }
     .broker-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-    .broker-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px; display:grid; gap:10px; }
+    .broker-grid.single { grid-template-columns:1fr; }
+    .broker-grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .broker-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px; display:grid; gap:10px; min-height:124px; align-content:start; }
     .broker-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .broker-copy { display:grid; gap:4px; min-width:0; }
     .broker-title { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; }
+    .broker-group-title { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
     .broker-state { font-size:13px; color:var(--text); }
     .broker-state.on { color:var(--accent); }
-    .switch { position:relative; display:inline-flex; width:54px; height:32px; flex:0 0 auto; }
-    .switch input { position:absolute; opacity:0; width:0; height:0; min-height:0; padding:0; border:0; -webkit-appearance:none; appearance:none; }
-    .slider { position:absolute; inset:0; border-radius:999px; background:var(--background); border:1px solid var(--border); transition:background .2s ease,border-color .2s ease; cursor:pointer; }
-    .slider::before { content:""; position:absolute; width:24px; height:24px; left:3px; top:3px; border-radius:50%; background:var(--surface1); box-shadow:0 2px 8px rgba(0,0,0,.18); transition:transform .2s ease,background .2s ease; }
-    .switch input:checked + .slider { background:var(--accent); border-color:transparent; }
-    .switch input:checked + .slider::before { transform:translateX(22px); background:#fff; }
+    .broker-mode { display:grid; gap:10px; align-content:start; height:100%; }
+    .mode-slider { display:grid; gap:10px; }
+    .mode-slider input[type="range"] { width:100%; min-height:auto; padding:0; border:none; background:transparent; appearance:none; -webkit-appearance:none; }
+    .mode-slider input[type="range"]::-webkit-slider-runnable-track { height:12px; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent-hover)); border:1px solid var(--border); }
+    .mode-slider input[type="range"]::-moz-range-track { height:12px; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent-hover)); border:1px solid var(--border); }
+    .mode-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:26px; height:26px; margin-top:-8px; border-radius:50%; border:2px solid var(--surface1); background:#ffffff; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .mode-slider input[type="range"]::-moz-range-thumb { width:26px; height:26px; border-radius:50%; border:2px solid var(--surface1); background:#ffffff; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .mode-slider input[type="range"]:disabled { opacity:.55; }
+    .mode-labels { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; font-size:13px; color:var(--text-muted); text-align:center; }
+    .mode-labels.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .mode-label { padding:2px 0; border-radius:999px; transition:background .2s ease,color .2s ease; }
+    .mode-label.active { background:rgba(63,174,97,.18); color:var(--text); font-weight:700; }
+    :root[data-theme="dark"] .mode-label.active { background:rgba(73,194,125,.24); }
+    .mode-label.disabled { opacity:.4; }
+    .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     .panel-warning { min-height:1.4em; font-size:13px; color:var(--status-red); }
+    .panel-note { font-size:13px; color:var(--text-muted); }
     .themebtn { padding:10px 14px; }
     #status { white-space:pre-wrap; color:var(--text-muted); min-height:1.4em; }
     .terminal { background:var(--terminal-bg); border:1px solid var(--terminal-border); border-radius:12px; padding:14px; min-height:180px; max-height:320px; overflow:auto; font-family:inherit; font-size:14px; line-height:1.45; }
@@ -245,7 +373,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       body { font-size:15px; }
       main { padding:16px; }
       .card { padding:16px; margin-bottom:14px; }
-      .row, .row3, .row-command, .metric-grid, .hud-grid-1, .hud-grid-2, .hud-grid-3, .core-grid, .core-metrics, .broker-grid { grid-template-columns:1fr; }
+      .row, .row3, .row-command, .metric-grid, .hud-grid-1, .hud-grid-2, .hud-grid-3, .core-grid, .core-metrics, .broker-stack, .broker-grid, .broker-grid.single, .broker-grid.two { grid-template-columns:1fr; }
       .inline-actions { grid-template-columns:minmax(0,1fr) auto auto; }
       .fieldline { grid-template-columns:minmax(0,1fr) auto; align-items:center; }
       .row-command button { width:100%; }
@@ -269,7 +397,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 </head>
 <body>
   <main>
-    <section class="card" id="login">
+    <section class="card" id="login" style="display:none">
       <h1>Repeater Config</h1>
       <p>Use the repeater admin password to unlock the command console. Accept the self-signed certificate warning in your browser first.</p>
       <div class="row" style="margin-top:14px">
@@ -513,44 +641,58 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 	        </div>
 	        <div class="field-card">
 	          <label class="label">MQTT Servers</label>
-	          <div class="broker-grid">
-	            <div class="broker-card">
-	              <div class="broker-row">
-	                <div class="broker-copy">
-	                  <div class="broker-title">EastMesh AU</div>
-	                  <div class="broker-state" id="mqttEastmeshAuState">Off</div>
+	          <div class="broker-stack">
+	            <div class="broker-group">
+	              <div class="broker-group-title">EastMesh</div>
+		              <div class="broker-grid single">
+	                <div class="broker-card">
+	                  <div class="broker-mode">
+	                    <div class="broker-row">
+	                      <div class="broker-copy">
+	                        <div class="broker-title">EastMesh AU</div>
+	                        <div class="broker-state" id="mqttEastmeshAuState">Off</div>
+	                      </div>
+	                    </div>
+	                    <div class="mode-slider">
+	                      <input id="mqttEastmeshMode" type="range" min="0" max="1" step="1" value="0" aria-label="EastMesh mode">
+	                      <div class="mode-labels two" aria-hidden="true">
+	                        <div class="mode-label" data-eastmesh-label="off">Off</div>
+	                        <div class="mode-label" data-eastmesh-label="on">On</div>
+	                      </div>
+	                    </div>
+	                    <input id="mqttEastmeshAu" class="visually-hidden" type="checkbox" tabindex="-1" aria-hidden="true">
+	                  </div>
 	                </div>
-	                <label class="switch" aria-label="Toggle EastMesh AU">
-	                  <input id="mqttEastmeshAu" type="checkbox" data-broker-on="set mqtt.eastmesh-au on" data-broker-off="set mqtt.eastmesh-au off">
-	                  <span class="slider"></span>
-	                </label>
 	              </div>
 	            </div>
-	            <div class="broker-card">
-	              <div class="broker-row">
-	                <div class="broker-copy">
-	                  <div class="broker-title">LetsMesh EU</div>
-	                  <div class="broker-state" id="mqttLetsmeshEuState">Off</div>
+	            <div class="broker-group">
+	              <div class="broker-group-title">LetsMesh</div>
+	              <div class="broker-grid single">
+	                <div class="broker-card">
+	                  <div class="broker-mode">
+	                    <div class="broker-row">
+	                      <div class="broker-copy">
+	                        <div class="broker-title">LetsMesh Mode</div>
+	                        <div class="broker-state" id="mqttLetsmeshModeState">Off</div>
+	                      </div>
+	                    </div>
+	                    <div class="mode-slider">
+	                      <input id="mqttLetsmeshMode" type="range" min="0" max="3" step="1" value="0" aria-label="LetsMesh mode">
+	                      <div class="mode-labels" aria-hidden="true">
+	                        <div class="mode-label" data-letsmesh-label="off">Off</div>
+	                        <div class="mode-label" data-letsmesh-label="eu">EU</div>
+	                        <div class="mode-label" data-letsmesh-label="us">US</div>
+	                        <div class="mode-label" data-letsmesh-label="both">Both</div>
+	                      </div>
+	                    </div>
+	                    <input id="mqttLetsmeshEu" class="visually-hidden" type="checkbox" tabindex="-1" aria-hidden="true">
+	                    <input id="mqttLetsmeshUs" class="visually-hidden" type="checkbox" tabindex="-1" aria-hidden="true">
+	                  </div>
 	                </div>
-	                <label class="switch" aria-label="Toggle LetsMesh EU">
-	                  <input id="mqttLetsmeshEu" type="checkbox" data-broker-on="set mqtt.letsmesh-eu on" data-broker-off="set mqtt.letsmesh-eu off">
-	                  <span class="slider"></span>
-	                </label>
-	              </div>
-	            </div>
-	            <div class="broker-card">
-	              <div class="broker-row">
-	                <div class="broker-copy">
-	                  <div class="broker-title">LetsMesh US</div>
-	                  <div class="broker-state" id="mqttLetsmeshUsState">Off</div>
-	                </div>
-	                <label class="switch" aria-label="Toggle LetsMesh US">
-	                  <input id="mqttLetsmeshUs" type="checkbox" data-broker-on="set mqtt.letsmesh-us on" data-broker-off="set mqtt.letsmesh-us off">
-	                  <span class="slider"></span>
-	                </label>
 	              </div>
 	            </div>
 	          </div>
+	          <div class="panel-note">If EastMesh is enabled, use only one LetsMesh broker. Enable both LetsMesh brokers only when EastMesh is off.</div>
 	          <div id="mqttBrokerWarning" class="panel-warning"></div>
 	        </div>
 	      </div>
@@ -568,12 +710,17 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 
   </main>
   <script>
-    let token = "";
+    let token = sessionStorage.getItem("repeater-token") || "";
     let commandQueue = Promise.resolve();
     const statusEl = document.getElementById("status");
     const replyEl = document.getElementById("reply");
     const themeToggleEl = document.getElementById("themeToggle");
     const rootEl = document.documentElement;
+    function redirectToLogin() {
+      sessionStorage.removeItem("repeater-token");
+      token = "";
+      window.location.replace("/");
+    }
     function getPreferredTheme() {
       const saved = localStorage.getItem("repeater-theme");
       if (saved === "light" || saved === "dark") return saved;
@@ -853,8 +1000,9 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       document.getElementById("repeaterSettingsPanel").style.display = show ? "block" : "none";
       if (!show) {
         commandQueue = Promise.resolve();
-        document.getElementById("password").value = "";
-        statusEl.textContent = "";
+        const passwordEl = document.getElementById("password");
+        if (passwordEl) passwordEl.value = "";
+        if (statusEl) statusEl.textContent = "";
         document.getElementById("statsDashboard").innerHTML = '<div class="stats-empty">Press Get Stats to load the dashboard.</div>';
       }
     }
@@ -864,7 +1012,10 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       return next;
     }
     async function runCommand(cmd, options = {}) {
-      if (!token) return { ok:false, text:"" };
+      if (!token) {
+        redirectToLogin();
+        return { ok:false, text:"Unauthorized" };
+      }
       const recordHistory = options.recordHistory !== false;
       const updateInput = options.updateInput !== false;
       return queueCommand(async () => {
@@ -873,6 +1024,10 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
         }
         const res = await fetch("/api/command", { method:"POST", headers:{ "X-Auth-Token": token }, body: cmd });
         const text = await res.text();
+        if (res.status === 401) {
+          redirectToLogin();
+          return { ok:false, text };
+        }
         if (recordHistory) {
           appendHistory(cmd, text, res.ok);
         }
@@ -893,10 +1048,17 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       document.getElementById(inputId).value = value;
     }
     async function fetchJson(path) {
-      if (!token) return null;
+      if (!token) {
+        redirectToLogin();
+        return null;
+      }
       return queueCommand(async () => {
         const res = await fetch(path, { headers:{ "X-Auth-Token": token } });
         const text = await res.text();
+        if (res.status === 401) {
+          redirectToLogin();
+          throw new Error("Unauthorized");
+        }
         if (!res.ok) {
           throw new Error(text || "request failed");
         }
@@ -917,6 +1079,58 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 	      if (typeof data.mqtt_letsmesh_us === "string") setBrokerToggle("mqttLetsmeshUs", data.mqtt_letsmesh_us);
 	      updateBrokerWarning();
 	    }
+	    function getLetsmeshMode() {
+	      const eu = document.getElementById("mqttLetsmeshEu");
+	      const us = document.getElementById("mqttLetsmeshUs");
+	      const euOn = eu && eu.checked;
+	      const usOn = us && us.checked;
+	      if (euOn && usOn) return "both";
+	      if (euOn) return "eu";
+	      if (usOn) return "us";
+	      return "off";
+	    }
+	    function refreshEastmeshModeUi() {
+	      const input = document.getElementById("mqttEastmeshAu");
+	      const enabled = !!(input && input.checked);
+	      const slider = document.getElementById("mqttEastmeshMode");
+	      if (slider) {
+	        slider.value = enabled ? "1" : "0";
+	      }
+	      document.querySelectorAll("[data-eastmesh-label]").forEach((label) => {
+	        label.classList.toggle("active", label.dataset.eastmeshLabel === (enabled ? "on" : "off"));
+	      });
+	    }
+	    function getLetsmeshModeIndex(mode) {
+	      const order = { off:0, eu:1, us:2, both:3 };
+	      return Object.prototype.hasOwnProperty.call(order, mode) ? order[mode] : 0;
+	    }
+	    function clampLetsmeshModeIndex(index) {
+	      const eastmesh = document.getElementById("mqttEastmeshAu");
+	      const eastmeshEnabled = !!(eastmesh && eastmesh.checked);
+	      const bounded = Math.max(0, Math.min(3, index));
+	      return eastmeshEnabled && bounded === 3 ? 1 : bounded;
+	    }
+	    function refreshLetsmeshModeUi() {
+	      const mode = getLetsmeshMode();
+	      const eastmesh = document.getElementById("mqttEastmeshAu");
+	      const eastmeshEnabled = !!(eastmesh && eastmesh.checked);
+	      const state = document.getElementById("mqttLetsmeshModeState");
+	      const labels = { off:"Off", eu:"EU", us:"US", both:"Both" };
+	      if (state) {
+	        state.textContent = labels[mode] || "Off";
+	        state.classList.toggle("on", mode !== "off");
+	      }
+	      const slider = document.getElementById("mqttLetsmeshMode");
+	      if (slider) {
+	        slider.max = "3";
+	        slider.value = String(clampLetsmeshModeIndex(getLetsmeshModeIndex(mode)));
+	      }
+	      document.querySelectorAll("[data-letsmesh-label]").forEach((label) => {
+	        const labelMode = label.dataset.letsmeshLabel;
+	        label.classList.toggle("active", labelMode === mode);
+	        label.classList.toggle("disabled", eastmeshEnabled && labelMode === "both");
+	      });
+	    }
 	    function setBrokerToggle(inputId, state) {
 	      const input = document.getElementById(inputId);
 	      if (!input) return;
@@ -927,13 +1141,15 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 	        label.textContent = enabled ? "On" : "Off";
 	        label.classList.toggle("on", enabled);
 	      }
+	      if (inputId === "mqttLetsmeshEu" || inputId === "mqttLetsmeshUs") {
+	        refreshLetsmeshModeUi();
+	      } else if (inputId === "mqttEastmeshAu") {
+	        refreshEastmeshModeUi();
+	        refreshLetsmeshModeUi();
+	      }
 	    }
 	    function updateBrokerWarning() {
-	      const enabled = ["mqttEastmeshAu", "mqttLetsmeshEu", "mqttLetsmeshUs"].filter((inputId) => {
-	        const input = document.getElementById(inputId);
-	        return input && input.checked;
-	      }).length;
-	      document.getElementById("mqttBrokerWarning").textContent = enabled >= 3 ? "Running all 3 MQTT servers is not recommended. Prefer 2 at most." : "";
+	      document.getElementById("mqttBrokerWarning").textContent = "";
 	    }
 	    async function loadBrokerState(cmd, inputId) {
 	      const result = await runCommand(cmd);
@@ -973,39 +1189,6 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       getStatsBtn.disabled = false;
       getStatsBtn.textContent = "Get Stats";
     }
-    document.getElementById("loginBtn").onclick = async () => {
-      const pwd = document.getElementById("password").value;
-      const res = await fetch("/login", { method:"POST", body: pwd });
-      const text = await res.text();
-      if (!res.ok) {
-        statusEl.textContent = text || "Access denied";
-        return;
-      }
-      token = text.trim();
-      showAuthedUi(true);
-	      try {
-	        applyBootstrapData(await fetchJson("/api/bootstrap"));
-	      } catch (_) {
-	        await Promise.all([
-	          loadField("get name", "nodeName"),
-	          loadField("get mqtt.iata", "mqttIata"),
-	          loadField("get mqtt.owner", "mqttOwner"),
-	          loadField("get mqtt.email", "mqttEmail"),
-	          loadBrokerState("get mqtt.eastmesh-au", "mqttEastmeshAu"),
-	          loadBrokerState("get mqtt.letsmesh-eu", "mqttLetsmeshEu"),
-	          loadBrokerState("get mqtt.letsmesh-us", "mqttLetsmeshUs"),
-	          loadField("get advert.interval", "advertInterval"),
-	          loadField("get flood.advert.interval", "floodInterval"),
-	          loadField("get flood.max", "floodMax")
-	        ]);
-	      }
-    };
-    document.getElementById("password").addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        document.getElementById("loginBtn").click();
-      }
-    });
     document.getElementById("runBtn").onclick = () => runCommand(document.getElementById("command").value);
     document.getElementById("getStatsBtn").onclick = () => refreshStats();
     document.getElementById("command").addEventListener("keydown", (event) => {
@@ -1017,15 +1200,72 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 	    document.querySelectorAll("[data-cmd]").forEach((btn) => btn.onclick = () => runCommand(btn.dataset.cmd));
 	    document.querySelectorAll("[data-prefix]").forEach((btn) => btn.onclick = () => runPrefixed(btn.dataset.prefix, btn.dataset.input));
 	    document.querySelectorAll("[data-load-cmd]").forEach((btn) => btn.onclick = () => loadField(btn.dataset.loadCmd, btn.dataset.loadInput, btn.dataset.loadFormat));
-	    document.querySelectorAll("[data-broker-on]").forEach((input) => input.addEventListener("change", () => {
-	      const label = document.getElementById(input.id + "State");
-	      if (label) {
-	        label.textContent = input.checked ? "On" : "Off";
-	        label.classList.toggle("on", input.checked);
+	    async function setEastmeshMode(enabled) {
+	      if (enabled && getLetsmeshMode() === "both") {
+	        await setLetsmeshMode("eu");
 	      }
+	      const result = await runCommand(enabled ? "set mqtt.eastmesh-au on" : "set mqtt.eastmesh-au off");
+	      if (!result.ok) {
+	        refreshEastmeshModeUi();
+	        refreshLetsmeshModeUi();
+	        updateBrokerWarning();
+	        return;
+	      }
+	      setBrokerToggle("mqttEastmeshAu", enabled ? "on" : "off");
+	      refreshEastmeshModeUi();
+	      refreshLetsmeshModeUi();
 	      updateBrokerWarning();
-	      runCommand(input.checked ? input.dataset.brokerOn : input.dataset.brokerOff);
-	    }));
+	    }
+	    const eastmeshModeSlider = document.getElementById("mqttEastmeshMode");
+	    if (eastmeshModeSlider) {
+	      eastmeshModeSlider.addEventListener("input", () => {
+	        eastmeshModeSlider.value = (Number.parseInt(eastmeshModeSlider.value, 10) || 0) >= 1 ? "1" : "0";
+	      });
+	      eastmeshModeSlider.addEventListener("change", () => {
+	        setEastmeshMode((Number.parseInt(eastmeshModeSlider.value, 10) || 0) >= 1);
+	      });
+	    }
+	    async function setLetsmeshMode(mode) {
+	      const eastmesh = document.getElementById("mqttEastmeshAu");
+	      if (mode === "both" && eastmesh && eastmesh.checked) {
+	        updateBrokerWarning();
+	        refreshLetsmeshModeUi();
+	        return;
+	      }
+	      const desired = {
+	        eu: mode === "eu" || mode === "both",
+	        us: mode === "us" || mode === "both"
+	      };
+	      const currentEu = document.getElementById("mqttLetsmeshEu").checked;
+	      const currentUs = document.getElementById("mqttLetsmeshUs").checked;
+	      const commands = [];
+	      if (currentEu && !desired.eu) commands.push(["mqttLetsmeshEu", "set mqtt.letsmesh-eu off", "off"]);
+	      if (currentUs && !desired.us) commands.push(["mqttLetsmeshUs", "set mqtt.letsmesh-us off", "off"]);
+	      if (!currentEu && desired.eu) commands.push(["mqttLetsmeshEu", "set mqtt.letsmesh-eu on", "on"]);
+	      if (!currentUs && desired.us) commands.push(["mqttLetsmeshUs", "set mqtt.letsmesh-us on", "on"]);
+	      for (const [inputId, command, nextState] of commands) {
+	        const result = await runCommand(command);
+	        if (!result.ok) {
+	          refreshLetsmeshModeUi();
+	          updateBrokerWarning();
+	          return;
+	        }
+	        setBrokerToggle(inputId, nextState);
+	      }
+	      refreshLetsmeshModeUi();
+	      updateBrokerWarning();
+	    }
+	    const letsmeshModeSlider = document.getElementById("mqttLetsmeshMode");
+	    if (letsmeshModeSlider) {
+	      letsmeshModeSlider.addEventListener("input", () => {
+	        letsmeshModeSlider.value = String(clampLetsmeshModeIndex(Number.parseInt(letsmeshModeSlider.value, 10) || 0));
+	      });
+	      letsmeshModeSlider.addEventListener("change", () => {
+	        const modes = ["off", "eu", "us", "both"];
+	        const index = clampLetsmeshModeIndex(Number.parseInt(letsmeshModeSlider.value, 10) || 0);
+	        setLetsmeshMode(modes[index] || "off");
+	      });
+	    }
 	    document.getElementById("saveOwnerInfo").onclick = () => {
 	      const value = document.getElementById("ownerInfo").value.replace(/\n/g, "|");
 	      runCommand("set owner.info " + value);
@@ -1046,10 +1286,37 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
       }
     };
     document.getElementById("logoutBtn").onclick = () => {
-      token = "";
-      showAuthedUi(false);
+      redirectToLogin();
     };
-    showAuthedUi(false);
+	    async function initApp() {
+      if (!token) {
+        redirectToLogin();
+        return;
+      }
+      showAuthedUi(true);
+      try {
+        applyBootstrapData(await fetchJson("/api/bootstrap"));
+      } catch (_) {
+        if (!token) {
+          return;
+        }
+        await Promise.all([
+          loadField("get name", "nodeName"),
+          loadField("get mqtt.iata", "mqttIata"),
+          loadField("get mqtt.owner", "mqttOwner"),
+          loadField("get mqtt.email", "mqttEmail"),
+          loadBrokerState("get mqtt.eastmesh-au", "mqttEastmeshAu"),
+          loadBrokerState("get mqtt.letsmesh-eu", "mqttLetsmeshEu"),
+          loadBrokerState("get mqtt.letsmesh-us", "mqttLetsmeshUs"),
+          loadField("get advert.interval", "advertInterval"),
+          loadField("get flood.advert.interval", "floodInterval"),
+          loadField("get flood.max", "floodMax")
+        ]);
+      }
+	    }
+	    refreshEastmeshModeUi();
+	    refreshLetsmeshModeUi();
+	    initApp();
   </script>
 </body>
 </html>
@@ -1058,7 +1325,7 @@ const char kWebPanelHtml[] PROGMEM = R"HTML(
 }  // namespace
 
 WebPanelServer::WebPanelServer()
-    : _runner(nullptr), _server(nullptr), _token{0}, _route_context{this} {
+    : _runner(nullptr), _server(nullptr), _token{0}, _last_activity_ms(0), _route_context{this} {
 }
 
 void WebPanelServer::setCommandRunner(WebPanelCommandRunner* runner) {
@@ -1070,13 +1337,11 @@ bool WebPanelServer::start() {
     return _server != nullptr;
   }
 
-  if (_token[0] == 0) {
-    refreshToken();
-  }
+  noteActivity();
 
   httpd_ssl_config_t config = HTTPD_SSL_CONFIG_DEFAULT();
   config.httpd.max_open_sockets = 2;
-  config.httpd.max_uri_handlers = 5;
+  config.httpd.max_uri_handlers = 6;
   config.httpd.max_resp_headers = 4;
   config.httpd.backlog_conn = 2;
   config.httpd.recv_wait_timeout = 2;
@@ -1101,11 +1366,13 @@ bool WebPanelServer::start() {
   }
 
   httpd_uri_t index_uri = {.uri = "/", .method = HTTP_GET, .handler = &WebPanelServer::handleIndex, .user_ctx = &_route_context};
+  httpd_uri_t app_uri = {.uri = "/app", .method = HTTP_GET, .handler = &WebPanelServer::handleApp, .user_ctx = &_route_context};
   httpd_uri_t login_uri = {.uri = "/login", .method = HTTP_POST, .handler = &WebPanelServer::handleLogin, .user_ctx = &_route_context};
   httpd_uri_t command_uri = {.uri = "/api/command", .method = HTTP_POST, .handler = &WebPanelServer::handleCommand, .user_ctx = &_route_context};
   httpd_uri_t bootstrap_uri = {.uri = "/api/bootstrap", .method = HTTP_GET, .handler = &WebPanelServer::handleBootstrap, .user_ctx = &_route_context};
   httpd_uri_t stats_uri = {.uri = "/api/stats", .method = HTTP_GET, .handler = &WebPanelServer::handleStats, .user_ctx = &_route_context};
   httpd_register_uri_handler(_server, &index_uri);
+  httpd_register_uri_handler(_server, &app_uri);
   httpd_register_uri_handler(_server, &login_uri);
   httpd_register_uri_handler(_server, &command_uri);
   httpd_register_uri_handler(_server, &bootstrap_uri);
@@ -1121,6 +1388,7 @@ void WebPanelServer::stop() {
     _server = nullptr;
   }
   _token[0] = 0;
+  _last_activity_ms = 0;
 }
 
 bool WebPanelServer::isRunning() const {
@@ -1131,14 +1399,38 @@ bool WebPanelServer::hasSessionToken() const {
   return _token[0] != 0;
 }
 
+bool WebPanelServer::shouldAutoLock(unsigned long now_ms) const {
+  if (_server == nullptr || _token[0] == 0 || kWebIdleTimeoutMs == 0 || _last_activity_ms == 0) {
+    return false;
+  }
+  return now_ms - _last_activity_ms >= kWebIdleTimeoutMs;
+}
+
+void WebPanelServer::lockSession() {
+  _token[0] = 0;
+  _last_activity_ms = 0;
+}
+
 esp_err_t WebPanelServer::handleIndex(httpd_req_t* req) {
   auto* ctx = static_cast<RouteContext*>(req->user_ctx);
   if (ctx == nullptr || ctx->self == nullptr) {
     return httpd_resp_send_500(req);
   }
+  ctx->self->noteActivity();
   httpd_resp_set_type(req, "text/html; charset=utf-8");
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-  return httpd_resp_send(req, kWebPanelHtml, HTTPD_RESP_USE_STRLEN);
+  return sendProgmemChunked(req, kWebPanelLoginHtml);
+}
+
+esp_err_t WebPanelServer::handleApp(httpd_req_t* req) {
+  auto* ctx = static_cast<RouteContext*>(req->user_ctx);
+  if (ctx == nullptr || ctx->self == nullptr) {
+    return httpd_resp_send_500(req);
+  }
+  ctx->self->noteActivity();
+  httpd_resp_set_type(req, "text/html; charset=utf-8");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  return sendProgmemChunked(req, kWebPanelAppHtml);
 }
 
 esp_err_t WebPanelServer::handleLogin(httpd_req_t* req) {
@@ -1165,6 +1457,7 @@ esp_err_t WebPanelServer::handleLogin(httpd_req_t* req) {
 
   freeScratchBuffer(password);
   ctx->self->refreshToken();
+  ctx->self->noteActivity();
   WEB_PANEL_LOG("login accepted");
   httpd_resp_set_type(req, "text/plain; charset=utf-8");
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
@@ -1194,6 +1487,7 @@ esp_err_t WebPanelServer::handleCommand(httpd_req_t* req) {
     return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad request");
   }
 
+  ctx->self->noteActivity();
   memset(reply, 0, kWebReplyBufferSize);
   ctx->self->_runner->runWebCommand(command, reply, kWebReplyBufferSize);
   httpd_resp_set_type(req, "text/plain; charset=utf-8");
@@ -1213,11 +1507,10 @@ esp_err_t WebPanelServer::handleBootstrap(httpd_req_t* req) {
     return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
   }
 
+  ctx->self->noteActivity();
   char* reply = allocScratchBuffer(kWebReplyBufferSize);
-  char* json = allocScratchBuffer(kWebJsonBufferSize);
-  if (reply == nullptr || json == nullptr) {
+  if (reply == nullptr) {
     freeScratchBuffer(reply);
-    freeScratchBuffer(json);
     return httpd_resp_send_500(req);
   }
 
@@ -1237,9 +1530,13 @@ esp_err_t WebPanelServer::handleBootstrap(httpd_req_t* req) {
 	      {"flood_max", "get flood.max"},
 	  };
 
-  size_t offset = 0;
-  json[offset++] = '{';
-  json[offset] = 0;
+  httpd_resp_set_type(req, "application/json; charset=utf-8");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  if (sendChunk(req, "{") != ESP_OK) {
+    freeScratchBuffer(reply);
+    httpd_resp_sendstr_chunk(req, nullptr);
+    return ESP_FAIL;
+  }
   for (size_t i = 0; i < (sizeof(fields) / sizeof(fields[0])); ++i) {
     memset(reply, 0, kWebReplyBufferSize);
     ctx->self->_runner->runWebCommand(fields[i].command, reply, kWebReplyBufferSize);
@@ -1250,25 +1547,19 @@ esp_err_t WebPanelServer::handleBootstrap(httpd_req_t* req) {
     if (strcmp(value, "-") == 0) {
       value = "";
     }
-    if (!appendJsonField(json, kWebJsonBufferSize, offset, fields[i].key, value, i != 0)) {
+    if (sendJsonFieldChunk(req, fields[i].key, value, i != 0) != ESP_OK) {
       freeScratchBuffer(reply);
-      freeScratchBuffer(json);
-      return httpd_resp_send_500(req);
+      httpd_resp_sendstr_chunk(req, nullptr);
+      return ESP_FAIL;
     }
   }
-  if (offset + 2 >= kWebJsonBufferSize) {
-    freeScratchBuffer(reply);
-    freeScratchBuffer(json);
-    return httpd_resp_send_500(req);
+  esp_err_t rc = sendChunk(req, "}");
+  if (rc == ESP_OK) {
+    rc = httpd_resp_sendstr_chunk(req, nullptr);
+  } else {
+    httpd_resp_sendstr_chunk(req, nullptr);
   }
-  json[offset++] = '}';
-  json[offset] = 0;
-
-  httpd_resp_set_type(req, "application/json; charset=utf-8");
-  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-  esp_err_t rc = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   freeScratchBuffer(reply);
-  freeScratchBuffer(json);
   return rc;
 }
 
@@ -1281,11 +1572,10 @@ esp_err_t WebPanelServer::handleStats(httpd_req_t* req) {
     return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Unauthorized");
   }
 
+  ctx->self->noteActivity();
   char* reply = allocScratchBuffer(kWebReplyBufferSize);
-  char* json = allocScratchBuffer(kWebJsonBufferSize);
-  if (reply == nullptr || json == nullptr) {
+  if (reply == nullptr) {
     freeScratchBuffer(reply);
-    freeScratchBuffer(json);
     return httpd_resp_send_500(req);
   }
 
@@ -1301,31 +1591,29 @@ esp_err_t WebPanelServer::handleStats(httpd_req_t* req) {
       {"memory", "memory"},
   };
 
-  size_t offset = 0;
-  json[offset++] = '{';
-  json[offset] = 0;
+  httpd_resp_set_type(req, "application/json; charset=utf-8");
+  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+  if (sendChunk(req, "{") != ESP_OK) {
+    freeScratchBuffer(reply);
+    httpd_resp_sendstr_chunk(req, nullptr);
+    return ESP_FAIL;
+  }
   for (size_t i = 0; i < (sizeof(fields) / sizeof(fields[0])); ++i) {
     memset(reply, 0, kWebReplyBufferSize);
     ctx->self->_runner->runWebCommand(fields[i].command, reply, kWebReplyBufferSize);
-    if (!appendJsonField(json, kWebJsonBufferSize, offset, fields[i].key, reply, i != 0)) {
+    if (sendJsonFieldChunk(req, fields[i].key, reply, i != 0) != ESP_OK) {
       freeScratchBuffer(reply);
-      freeScratchBuffer(json);
-      return httpd_resp_send_500(req);
+      httpd_resp_sendstr_chunk(req, nullptr);
+      return ESP_FAIL;
     }
   }
-  if (offset + 2 >= kWebJsonBufferSize) {
-    freeScratchBuffer(reply);
-    freeScratchBuffer(json);
-    return httpd_resp_send_500(req);
+  esp_err_t rc = sendChunk(req, "}");
+  if (rc == ESP_OK) {
+    rc = httpd_resp_sendstr_chunk(req, nullptr);
+  } else {
+    httpd_resp_sendstr_chunk(req, nullptr);
   }
-  json[offset++] = '}';
-  json[offset] = 0;
-
-  httpd_resp_set_type(req, "application/json; charset=utf-8");
-  httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-  esp_err_t rc = httpd_resp_send(req, json, HTTPD_RESP_USE_STRLEN);
   freeScratchBuffer(reply);
-  freeScratchBuffer(json);
   return rc;
 }
 
@@ -1366,6 +1654,10 @@ bool WebPanelServer::isAuthorized(httpd_req_t* req) const {
   return strcmp(token, _token) == 0;
 }
 
+void WebPanelServer::noteActivity() {
+  _last_activity_ms = millis();
+}
+
 #else
 
 WebPanelServer::WebPanelServer()
@@ -1389,6 +1681,13 @@ bool WebPanelServer::isRunning() const {
 
 bool WebPanelServer::hasSessionToken() const {
   return false;
+}
+
+bool WebPanelServer::shouldAutoLock(unsigned long) const {
+  return false;
+}
+
+void WebPanelServer::lockSession() {
 }
 
 #endif
