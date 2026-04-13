@@ -6,6 +6,11 @@ MeshCore-EastMesh keeps the upstream MeshCore firmware intact and adds an EastMe
 - `companion_radio_wifi` builds for Wi-Fi-connected companion devices
 - EastMesh-specific release automation and versioning on top of upstream MeshCore releases
 
+If you are just trying to pick a board or download firmware, start with:
+
+- [Compare Boards](./boards.md)
+- [Download and Flash Releases](./releases.md)
+
 ## End User Guides
 
 - [Compare Boards](./boards.md)

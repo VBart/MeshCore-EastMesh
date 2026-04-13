@@ -21,8 +21,6 @@ jobs:
       matrix:
         environment:
           # ESP32-S3 / core EastMesh targets
-          - Heltec_v3_companion_radio_wifi
-          - Heltec_v3_repeater_mqtt
           - heltec_v4_companion_radio_wifi
           - heltec_v4_repeater_mqtt
           - T_Beam_S3_Supreme_SX1262_companion_radio_wifi
@@ -31,7 +29,8 @@ jobs:
           - Xiao_C3_companion_radio_wifi
           - Xiao_C3_repeater_mqtt
           # ESP32-C6
-          - LilyGo_Tlora_C6_repeater_mqtt_
+          - LilyGo_Tlora_C6_repeater_mqtt
+          - Xiao_C6_repeater_mqtt
 
     steps:
       - name: Clone Repo
