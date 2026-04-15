@@ -1416,7 +1416,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       </section>`;
     }
     function renderRadioCard(radio) {
-      const rssiPct = pctRange(radio.last_rssi, -120, -20);
+      const rssiPct = pctRange(radio.last_rssi, -130, -90);
       const snrPct = pctRange(radio.last_snr, -20, 20);
       const noisePct = pctRange(radio.noise_floor, -60, -113);
       const totalAir = (radio.tx_air_secs || 0) + (radio.rx_air_secs || 0);
