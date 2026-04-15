@@ -842,8 +842,11 @@
 <ul>
 <li><code>get web</code></li>
 <li><code>get web.status</code>: shows whether the local HTTPS panel is available.</li>
+<li><code>get web.stats.status</code>: shows whether the dedicated stats page and history subsystem are enabled, whether recent history is active, whether PSRAM-backed history is available, and whether the SD-backed archive is mounted.</li>
 <li><code>set web on|off</code></li>
 <li><code>set.web on|off</code>: enables or disables the local HTTPS panel.</li>
+<li><code>set web.stats on|off</code></li>
+<li><code>set.web.stats on|off</code>: enables or disables the dedicated <code>/stats</code> page and historical stats collection.</li>
 </ul>
 <h3 id="runtime-diagnostics">Runtime Diagnostics<a class="headerlink" href="#runtime-diagnostics" title="Permanent link">&para;</a></h3>
 <ul>
@@ -865,9 +868,11 @@
 <li><code>get mqtt.status</code></li>
 <li><code>get web</code></li>
 <li><code>get web.status</code></li>
+<li><code>get web.stats.status</code></li>
 <li><code>advert</code></li>
 <li><code>reboot</code></li>
 <li><code>start ota</code></li>
+<li><code>set repeat on|off</code></li>
 <li><code>memory</code></li>
 <li><code>stats-core</code></li>
 <li><code>stats-radio</code></li>
@@ -895,6 +900,7 @@
 <li><code>get mqtt.letsmesh-us</code></li>
 <li><code>set mqtt.letsmesh-us on|off</code></li>
 <li><code>set web on|off</code></li>
+<li><code>set web.stats on|off</code></li>
 <li><code>get name</code></li>
 <li><code>set name &lt;device-name&gt;</code></li>
 <li><code>get lat</code></li>
