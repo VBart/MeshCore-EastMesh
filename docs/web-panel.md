@@ -30,11 +30,13 @@ The screenshots below show the current split between the lighter `/app` admin pa
 
 ### `/app`
 
-![Repeater web panel `/app` overview](./_assets/repeater_web_panel_app.png)
+![Repeater web panel `/app` overview](./_assets/repeater_web_panel_app_light.png#only-light)
+![Repeater web panel `/app` overview](./_assets/repeater_web_panel_app_dark.png#only-dark)
 
 ### `/stats`
 
-![Repeater web panel `/stats` overview](./_assets/repeater_web_panel_stats.png)
+![Repeater web panel `/stats` overview](./_assets/repeater_web_panel_stats_light.png#only-light)
+![Repeater web panel `/stats` overview](./_assets/repeater_web_panel_stats_dark.png#only-dark)
 
 ## Requirements
 

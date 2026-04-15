@@ -1,0 +1,164 @@
+schema_version: 1
+track: repeater-mqtt
+tag_prefix: repeater-mqtt-eastmesh-v
+baseline_version: "1.0.1"
+generated_from: "Adjacent git tag comparisons plus non-merge commit subjects."
+
+releases:
+  - version: "1.0.1"
+    tag: "repeater-mqtt-eastmesh-v1.0.1"
+    date: "2026-04-09"
+    previous_version: null
+    summary: "First EastMesh repeater_mqtt release with MQTT uplink, optional local web panel support, and EastMesh-specific release plumbing."
+    changes:
+      - type: added
+        area: mqtt
+        text: "Added the EastMesh repeater_mqtt firmware track with MQTT uplink support and EastMesh-specific firmware workflows."
+      - type: added
+        area: web-panel
+        text: "Added the initial local HTTPS repeater web configuration panel for supported targets."
+      - type: added
+        area: release
+        text: "Added EastMesh release documentation, local build guidance, and CI workflows focused on the supported Wi-Fi and MQTT firmware tracks."
+      - type: changed
+        area: build
+        text: "Moved web panel certificate generation into the build flow and kept the web panel optional for tighter firmware targets."
+    breaking_changes: []
+
+  - version: "1.1.0"
+    tag: "repeater-mqtt-eastmesh-v1.1.0"
+    date: "2026-04-10"
+    previous_version: "1.0.1"
+    summary: "Expanded the repeater web panel with a fuller dashboard and MQTT settings, and stabilized HTTPS/TLS startup."
+    changes:
+      - type: added
+        area: web-panel
+        text: "Added a repeater dashboard and in-panel MQTT settings controls."
+      - type: changed
+        area: web-panel
+        text: "Stabilized HTTPS/TLS startup behavior for the local repeater web panel."
+      - type: changed
+        area: mqtt
+        text: "Refactored MQTT uplink handling to support the expanded web panel controls and cleaner repeater status reporting."
+      - type: docs
+        area: setup
+        text: "Added CLI rescue guidance for setting Wi-Fi on companion Wi-Fi builds and refreshed README/license content."
+    breaking_changes: []
+
+  - version: "1.1.1"
+    tag: "repeater-mqtt-eastmesh-v1.1.1"
+    date: "2026-04-10"
+    previous_version: "1.1.0"
+    summary: "Added mqtt.status control support and tightened the web panel and migration documentation."
+    changes:
+      - type: added
+        area: mqtt
+        text: "Added mqtt.status control/reporting support to make broker state easier to inspect from the repeater CLI."
+      - type: docs
+        area: migration
+        text: "Expanded migration guidance and aligned the docs site with the newer EastMesh structure."
+      - type: docs
+        area: web-panel
+        text: "Added dedicated web panel documentation and refreshed the site theme and navigation."
+    breaking_changes: []
+
+  - version: "1.1.2"
+    tag: "repeater-mqtt-eastmesh-v1.1.2"
+    date: "2026-04-10"
+    previous_version: "1.1.1"
+    summary: "Cleaned up legacy MQTT preference handling, restored status publishing, and expanded web panel controls."
+    changes:
+      - type: fixed
+        area: mqtt
+        text: "Cleared legacy MQTT preference fields so older persisted settings stopped leaking into current repeater behavior."
+      - type: fixed
+        area: mqtt
+        text: "Restored MQTT status publishing after the earlier control changes."
+      - type: changed
+        area: web-panel
+        text: "Expanded the repeater web panel controls and updated the related CLI and web panel docs."
+    breaking_changes: []
+
+  - version: "1.2.0"
+    tag: "repeater-mqtt-eastmesh-v1.2.0"
+    date: "2026-04-11"
+    previous_version: "1.1.2"
+    summary: "Reduced MQTT and web-panel memory pressure, streamlined broker controls, and polished the repeater admin surface."
+    changes:
+      - type: changed
+        area: mqtt
+        text: "Reduced MQTT uplink memory pressure and improved runtime behavior on constrained repeater targets."
+      - type: changed
+        area: web-panel
+        text: "Streamlined broker controls in the web panel and refreshed the end-user admin flow."
+      - type: fixed
+        area: web-panel
+        text: "Corrected the noise floor gauge coloring and exposed prv.key in the web console."
+      - type: added
+        area: board-support
+        text: "Added a battery reporting toggle for Heltec V3 repeater builds."
+      - type: docs
+        area: docs
+        text: "Simplified the end-user guides and aligned the web panel docs with the current UI."
+    breaking_changes: []
+
+  - version: "1.2.1"
+    tag: "repeater-mqtt-eastmesh-v1.2.1"
+    date: "2026-04-12"
+    previous_version: "1.2.0"
+    summary: "Made broker outages less disruptive and expanded the repeater web panel with radio presets and richer operational controls."
+    changes:
+      - type: fixed
+        area: mqtt
+        text: "Added graceful MQTT reconnect backoff during broker outages."
+      - type: added
+        area: web-panel
+        text: "Added radio preset controls, repeater info cards, and clock sync controls to the repeater web panel."
+      - type: docs
+        area: release
+        text: "Updated release guidance so the web panel can be used for common repeater setup before being disabled for maximum MQTT headroom."
+    breaking_changes: []
+
+  - version: "1.2.2"
+    tag: "repeater-mqtt-eastmesh-v1.2.2"
+    date: "2026-04-13"
+    previous_version: "1.2.1"
+    summary: "Reduced repeater web panel load pressure and improved MQTT diagnostics."
+    changes:
+      - type: changed
+        area: web-panel
+        text: "Reduced web panel runtime pressure so opening the admin UI had less impact on busy MQTT repeaters."
+      - type: added
+        area: mqtt
+        text: "Improved MQTT diagnostics and status visibility for troubleshooting broker and uplink issues."
+      - type: docs
+        area: web-panel
+        text: "Updated the web panel documentation to match the lighter loading behavior and operational guidance."
+    breaking_changes: []
+
+  - version: "1.3.0"
+    tag: "repeater-mqtt-eastmesh-v1.3.0"
+    date: "2026-04-15"
+    previous_version: "1.2.2"
+    summary: "Added SD-backed stats history and split the repeater web UI into a lighter /app page and a dedicated /stats console."
+    changes:
+      - type: added
+        area: stats
+        text: "Added SD-backed stats archival and restore support for repeater history data."
+      - type: added
+        area: web-panel
+        text: "Added a dedicated /stats web console for current status, historical trends, neighbours, and recent events."
+      - type: changed
+        area: web-panel
+        text: "Reworked the local web UI so /app stays focused on configuration and admin controls while /stats handles visibility and history."
+      - type: fixed
+        area: stats
+        text: "Restored /stats Wi-Fi signal quality and tuned the /stats signal, noise floor, and RSSI meters for correct LoRa-oriented ranges."
+      - type: changed
+        area: board-support
+        text: "Removed ESP32-C3 repeater_mqtt target support and the related CI coverage."
+      - type: docs
+        area: docs
+        text: "Expanded board comparison guidance and refreshed the published web panel screenshots and docs."
+    breaking_changes:
+      - "ESP32-C3 repeater_mqtt targets were removed in this release."
