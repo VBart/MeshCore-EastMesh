@@ -1070,7 +1070,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       return Math.min(max, Math.max(min, value));
     }
     function pctRange(value, min, max) {
-      if (!Number.isFinite(value) || max <= min) return 0;
+      if (!Number.isFinite(value) || max === min) return 0;
       return clamp(((value - min) * 100) / (max - min), 0, 100);
     }
     function pctRatio(value, total) {
