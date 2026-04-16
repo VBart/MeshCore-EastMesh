@@ -204,6 +204,25 @@ This keeps browser-side and device-side memory use lower than the previous in-pa
 
 If `web.stats` is enabled and an SD archive is mounted, trends can restore archived summary points after reboot. Recent live points are still added from in-memory history.
 
+### Stats History Capacity
+
+Stats samples are collected once per minute.
+
+Current in-memory history caps are:
+
+| Board class                    | Sample cap | Event cap | Approx. sampled history  |
+| ------------------------------ | ---------: | --------: | ------------------------ |
+| No PSRAM                       |       `24` |       `8` | Live-only recent history |
+| Less than `4MB` PSRAM          |      `240` |      `96` | About `4` hours          |
+| `4MB` to less than `8MB` PSRAM |      `480` |     `192` | About `8` hours          |
+| `8MB` PSRAM or more            |      `720` |     `288` | About `12` hours         |
+
+Archive-backed restore requires `web.stats` enabled plus a mounted SD card on boards that support the EastMesh archive path.
+
+The main purpose of the SD card is to let the repeater retain and restore stats history for `/stats`. As a secondary option, the archive files can also be removed and inspected on a computer for deeper manual review.
+
+On no-PSRAM boards, `/stats` can still show recent graphs while the stats view is active, but the history is smaller and does not provide the same archive-backed behaviour as PSRAM-capable boards.
+
 Useful CLI commands:
 
 - `set web.stats on`
