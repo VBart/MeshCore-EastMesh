@@ -1340,6 +1340,13 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       if (percent >= 35) return "warn";
       return "bad";
     }
+    function toneForLargestBlockPercent(percent) {
+      if (!Number.isFinite(percent)) return "bad";
+      if (percent >= 75) return "";
+      if (percent >= 55) return "ok";
+      if (percent >= 35) return "warn";
+      return "bad";
+    }
     function colorForHeapFreePercent(percent) {
       const tone = toneForHeapFreePercent(percent);
       if (tone === "ok") return "#6ea43f";
@@ -1511,11 +1518,13 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       const psramFree = memory.psram_free || 0;
       const psramMax = memory.psram_max || 0;
       const heapFreePct = pctRange(heapFree, 0, 128 * 1024);
+      const heapLargestPct = pctRatio(heapMax, heapFree);
+      const psramLargestPct = pctRatio(psramMax, psramFree);
       return `<section class="hud-card">
         <h3>Memory</h3>
         ${renderMeter("Heap Free", formatBytes(heapFree), heapFreePct, "total free heap", toneForHeapFreePercent(heapFreePct))}
-        ${renderMeter("Heap Largest Block", formatBytes(heapMax), pctRatio(heapMax, heapFree), "largest alloc vs free", false)}
-        ${renderMeter("PSRAM Largest Block", formatBytes(psramMax), pctRatio(psramMax, psramFree), "largest alloc vs free", false)}
+        ${renderMeter("Heap Largest Block", formatBytes(heapMax), heapLargestPct, "largest alloc vs free", toneForLargestBlockPercent(heapLargestPct))}
+        ${renderMeter("PSRAM Largest Block", formatBytes(psramMax), psramLargestPct, "largest alloc vs free", toneForLargestBlockPercent(psramLargestPct))}
         <div class="metric-grid">
           ${renderMetric("Heap Free", formatBytes(heapFree))}
           ${renderMetric("Heap Min", formatBytes(memory.heap_min || 0))}
