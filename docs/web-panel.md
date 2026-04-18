@@ -140,6 +140,7 @@ This is a small terminal for allowlisted commands.
 - command history is shown in the terminal box below
 - save buttons elsewhere in the page also show the generated command and the reply here
 - `clock` is available here if you want to check the repeater's current board time
+- the full current allowlist is documented in `docs/custom-cli.md` under `Web Panel Allowlisted Commands`
 
 This makes it easy to see exactly what the panel sent to the repeater.
 

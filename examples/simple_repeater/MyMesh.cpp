@@ -2036,6 +2036,7 @@ void MyMesh::runWebCommand(const char* command, char* reply, size_t reply_size) 
       matches_exact("get role") ||
       matches_exact("get public.key") ||
       matches_exact("get advert.interval") ||
+      matches_exact("get agc.reset.interval") ||
       matches_exact("get flood.advert.interval") ||
       matches_exact("get repeat") ||
       matches_exact("get flood.max") ||
@@ -2070,6 +2071,7 @@ void MyMesh::runWebCommand(const char* command, char* reply, size_t reply_size) 
       matches_prefix("set guest.password ") ||
       matches_prefix("set prv.key ") ||
       matches_prefix("set advert.interval ") ||
+      matches_prefix("set agc.reset.interval ") ||
       matches_prefix("set flood.advert.interval ") ||
       matches_prefix("set repeat ") ||
       matches_prefix("set flood.max ") ||

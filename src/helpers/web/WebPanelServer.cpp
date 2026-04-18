@@ -994,6 +994,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
     const RADIO_PRESETS_URL = "https://api.meshcore.nz/api/v1/config";
     const isStatsPage = window.location.pathname === "/stats";
     const LAST_PAGE_KEY = "repeater-last-page";
+    const PANEL_TITLE_KEY = "repeater-panel-title";
     let token = sessionStorage.getItem("repeater-token") || "";
     let commandQueue = Promise.resolve();
     let radioPresetEntries = [];
@@ -1005,7 +1006,19 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
     function updatePanelTitle(nameValue) {
       const fallbackTitle = "Repeater Config";
       const trimmedName = String(nameValue == null ? "" : nameValue).trim();
-      document.title = trimmedName ? trimmedName : fallbackTitle;
+      const nextTitle = trimmedName ? trimmedName : fallbackTitle;
+      document.title = nextTitle;
+      if (trimmedName) {
+        localStorage.setItem(PANEL_TITLE_KEY, trimmedName);
+      } else {
+        localStorage.removeItem(PANEL_TITLE_KEY);
+      }
+    }
+    function applyCachedPanelTitle() {
+      const cachedTitle = localStorage.getItem(PANEL_TITLE_KEY);
+      if (cachedTitle && cachedTitle.trim()) {
+        document.title = cachedTitle.trim();
+      }
     }
     function rememberCurrentPage() {
       localStorage.setItem(LAST_PAGE_KEY, isStatsPage ? "/stats" : "/app");
@@ -1017,6 +1030,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       window.location.replace("/");
     }
     rememberCurrentPage();
+    applyCachedPanelTitle();
     function getPreferredTheme() {
       const saved = localStorage.getItem("repeater-theme");
       if (saved === "light" || saved === "dark") return saved;
@@ -1340,6 +1354,13 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       if (percent >= 35) return "warn";
       return "bad";
     }
+    function toneForLargestBlockPercent(percent) {
+      if (!Number.isFinite(percent)) return "bad";
+      if (percent >= 75) return "";
+      if (percent >= 55) return "ok";
+      if (percent >= 35) return "warn";
+      return "bad";
+    }
     function colorForHeapFreePercent(percent) {
       const tone = toneForHeapFreePercent(percent);
       if (tone === "ok") return "#6ea43f";
@@ -1511,11 +1532,13 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       const psramFree = memory.psram_free || 0;
       const psramMax = memory.psram_max || 0;
       const heapFreePct = pctRange(heapFree, 0, 128 * 1024);
+      const heapLargestPct = pctRatio(heapMax, heapFree);
+      const psramLargestPct = pctRatio(psramMax, psramFree);
       return `<section class="hud-card">
         <h3>Memory</h3>
         ${renderMeter("Heap Free", formatBytes(heapFree), heapFreePct, "total free heap", toneForHeapFreePercent(heapFreePct))}
-        ${renderMeter("Heap Largest Block", formatBytes(heapMax), pctRatio(heapMax, heapFree), "largest alloc vs free", false)}
-        ${renderMeter("PSRAM Largest Block", formatBytes(psramMax), pctRatio(psramMax, psramFree), "largest alloc vs free", false)}
+        ${renderMeter("Heap Largest Block", formatBytes(heapMax), heapLargestPct, "largest alloc vs free", toneForLargestBlockPercent(heapLargestPct))}
+        ${renderMeter("PSRAM Largest Block", formatBytes(psramMax), psramLargestPct, "largest alloc vs free", toneForLargestBlockPercent(psramLargestPct))}
         <div class="metric-grid">
           ${renderMetric("Heap Free", formatBytes(heapFree))}
           ${renderMetric("Heap Min", formatBytes(memory.heap_min || 0))}
