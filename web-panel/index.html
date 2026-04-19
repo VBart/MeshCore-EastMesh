@@ -751,10 +751,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#a-command-says-it-is-not-allowlisted" class="md-nav__link">
+  <a href="#http-opens-instead-of-https" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A command says it is not allowlisted
+        HTTP opens instead of HTTPS
       
     </span>
   </a>
@@ -1246,10 +1246,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#a-command-says-it-is-not-allowlisted" class="md-nav__link">
+  <a href="#http-opens-instead-of-https" class="md-nav__link">
     <span class="md-ellipsis">
       
-        A command says it is not allowlisted
+        HTTP opens instead of HTTPS
       
     </span>
   </a>
@@ -1327,7 +1327,7 @@
 <li>a password-gated local admin page at <code>/app</code></li>
 <li>a dedicated stats and trends page at <code>/stats</code></li>
 <li>quick <code>get</code> commands for common repeater and MQTT checks</li>
-<li>a terminal-style CLI panel for allowlisted commands</li>
+<li>a terminal-style CLI panel for full repeater CLI access</li>
 <li>editable repeater settings</li>
 <li>editable MQTT settings</li>
 <li>a historical stats view with trends, neighbours, and recent events</li>
@@ -1377,7 +1377,7 @@
 <li>the panel uses the same admin password as the repeater CLI</li>
 <li>the connection is HTTPS, but the certificate is self-signed</li>
 <li>browsers will warn the first time you connect</li>
-<li>the panel only exposes an allowlisted subset of CLI commands</li>
+<li>the panel exposes the repeater CLI after login</li>
 </ul>
 <p>This is intended for local admin use on a trusted network, not for open internet exposure.</p>
 <h2 id="performance-notes">Performance Notes<a class="headerlink" href="#performance-notes" title="Permanent link">&para;</a></h2>
@@ -1426,13 +1426,13 @@
 </ul>
 <p>These are useful for quick checks without typing into the CLI field.</p>
 <h2 id="run-cli-command">Run CLI Command<a class="headerlink" href="#run-cli-command" title="Permanent link">&para;</a></h2>
-<p>This is a small terminal for allowlisted commands.</p>
+<p>This is a small terminal for the repeater CLI.</p>
 <ul>
 <li>press <code>Enter</code> to run the command</li>
 <li>command history is shown in the terminal box below</li>
 <li>save buttons elsewhere in the page also show the generated command and the reply here</li>
 <li><code>clock</code> is available here if you want to check the repeater's current board time</li>
-<li>the full current allowlist is documented in <code>docs/custom-cli.md</code> under <code>Web Panel Allowlisted Commands</code></li>
+<li>authenticated sessions can run the same CLI commands accepted by the repeater</li>
 </ul>
 <p>This makes it easy to see exactly what the panel sent to the repeater.</p>
 <h2 id="repeater-settings">Repeater Settings<a class="headerlink" href="#repeater-settings" title="Permanent link">&para;</a></h2>
@@ -1604,8 +1604,8 @@
 <li>whether stability improves after <code>set web off</code></li>
 </ul>
 <p>For fixed installations where MQTT uptime matters more than browser access, use the panel briefly and then disable it again.</p>
-<h3 id="a-command-says-it-is-not-allowlisted">A command says it is not allowlisted<a class="headerlink" href="#a-command-says-it-is-not-allowlisted" title="Permanent link">&para;</a></h3>
-<p>The panel intentionally limits what can be run from the browser. Use the serial CLI for commands outside the web allowlist. <code>clock</code> is included, but most maintenance and debug commands are still serial-only.</p>
+<h3 id="http-opens-instead-of-https">HTTP opens instead of HTTPS<a class="headerlink" href="#http-opens-instead-of-https" title="Permanent link">&para;</a></h3>
+<p>The repeater now redirects plain <code>http://</code> requests to the local <code>https://</code> panel URL. If the browser still shows a connection problem after redirecting, open <code>https://&lt;repeater-ip&gt;/</code> directly and accept the self-signed certificate warning first.</p>
 <h3 id="stats-or-settings-do-not-refresh">Stats or settings do not refresh<a class="headerlink" href="#stats-or-settings-do-not-refresh" title="Permanent link">&para;</a></h3>
 <p>Try:</p>
 <ul>

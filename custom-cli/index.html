@@ -564,10 +564,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-panel-allowlisted-commands" class="md-nav__link">
+  <a href="#web-panel-cli-access" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Web Panel Allowlisted Commands
+        Web Panel CLI Access
       
     </span>
   </a>
@@ -739,10 +739,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#web-panel-allowlisted-commands" class="md-nav__link">
+  <a href="#web-panel-cli-access" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Web Panel Allowlisted Commands
+        Web Panel CLI Access
       
     </span>
   </a>
@@ -863,88 +863,13 @@
 <li><code>get battery.reporting</code>: shows whether board battery reporting is enabled. Support is board-dependent.</li>
 <li><code>set battery.reporting on|off</code>: enables or disables battery voltage reporting on supported boards. This is currently useful for Heltec V3 boards where USB-only power can produce misleading battery readings. If your board needs this too, open an issue and support can be added board-by-board.</li>
 </ul>
-<h2 id="web-panel-allowlisted-commands">Web Panel Allowlisted Commands<a class="headerlink" href="#web-panel-allowlisted-commands" title="Permanent link">&para;</a></h2>
-<p>When the repeater web panel is enabled, it only allows a limited command set.</p>
-<p>That allowlist currently includes:</p>
+<h2 id="web-panel-cli-access">Web Panel CLI Access<a class="headerlink" href="#web-panel-cli-access" title="Permanent link">&para;</a></h2>
+<p>When the repeater web panel is enabled and you are authenticated, the browser CLI panel can run the same CLI commands accepted by the repeater.</p>
+<p>Notes:</p>
 <ul>
-<li><code>clock</code></li>
-<li><code>get mqtt.status</code></li>
-<li><code>get web</code></li>
-<li><code>get web.status</code></li>
-<li><code>get web.stats.status</code></li>
-<li><code>advert</code></li>
-<li><code>reboot</code></li>
-<li><code>start ota</code></li>
-<li><code>memory</code></li>
-<li><code>stats-core</code></li>
-<li><code>stats-radio</code></li>
-<li><code>stats-packets</code></li>
-<li><code>get wifi.status</code></li>
-<li><code>get wifi.powersaving</code></li>
-<li><code>set wifi.ssid &lt;ssid&gt;</code></li>
-<li><code>set wifi.pwd &lt;password&gt;</code></li>
-<li><code>set wifi.powersaving on|off</code></li>
-<li><code>get mqtt.iata</code></li>
-<li><code>set mqtt.iata &lt;code&gt;</code></li>
-<li><code>get mqtt.owner</code></li>
-<li><code>set mqtt.owner &lt;64-hex-char-public-key&gt;</code></li>
-<li><code>get mqtt.email</code></li>
-<li><code>set mqtt.email &lt;email&gt;</code></li>
-<li><code>get mqtt.packets</code></li>
-<li><code>set mqtt.packets on|off</code></li>
-<li><code>get mqtt.raw</code></li>
-<li><code>set mqtt.raw on|off</code></li>
-<li><code>get mqtt.statuscfg</code></li>
-<li><code>set mqtt.status on|off</code></li>
-<li><code>get mqtt.tx</code></li>
-<li><code>set mqtt.tx on|off</code></li>
-<li><code>get mqtt.eastmesh-au</code></li>
-<li><code>set mqtt.eastmesh-au on|off</code></li>
-<li><code>get mqtt.eastmesh.au</code></li>
-<li><code>set mqtt.eastmesh.au on|off</code></li>
-<li><code>get mqtt.letsmesh-eu</code></li>
-<li><code>set mqtt.letsmesh-eu on|off</code></li>
-<li><code>get mqtt.letsmesh.eu</code></li>
-<li><code>set mqtt.letsmesh.eu on|off</code></li>
-<li><code>get mqtt.letsmesh-us</code></li>
-<li><code>set mqtt.letsmesh-us on|off</code></li>
-<li><code>get mqtt.letsmesh.us</code></li>
-<li><code>set mqtt.letsmesh.us on|off</code></li>
-<li><code>set web on|off</code></li>
-<li><code>set.web on|off</code></li>
-<li><code>set web.stats on|off</code></li>
-<li><code>set.web.stats on|off</code></li>
-<li><code>get name</code></li>
-<li><code>set name &lt;device-name&gt;</code></li>
-<li><code>get lat</code></li>
-<li><code>set lat &lt;latitude&gt;</code></li>
-<li><code>get lon</code></li>
-<li><code>set lon &lt;longitude&gt;</code></li>
-<li><code>get radio</code></li>
-<li><code>set radio &lt;freq&gt; &lt;bw&gt; &lt;sf&gt; &lt;cr&gt;</code></li>
-<li><code>get prv.key</code></li>
-<li><code>get guest.password</code></li>
-<li><code>password &lt;admin-password&gt;</code></li>
-<li><code>set guest.password &lt;password&gt;</code></li>
-<li><code>set prv.key &lt;64-hex-char-private-key&gt;</code></li>
-<li><code>get role</code></li>
-<li><code>get public.key</code></li>
-<li><code>get advert.interval</code></li>
-<li><code>set advert.interval &lt;minutes&gt;</code></li>
-<li><code>get agc.reset.interval</code></li>
-<li><code>set agc.reset.interval &lt;seconds&gt;</code></li>
-<li><code>get flood.advert.interval</code></li>
-<li><code>set flood.advert.interval &lt;hours&gt;</code></li>
-<li><code>get repeat</code></li>
-<li><code>set repeat on|off</code></li>
-<li><code>get flood.max</code></li>
-<li><code>set flood.max &lt;count&gt;</code></li>
-<li><code>get path.hash.mode</code></li>
-<li><code>set path.hash.mode &lt;mode&gt;</code></li>
-<li><code>get owner.info</code></li>
-<li><code>set owner.info &lt;text&gt;</code></li>
-<li><code>time &lt;iso-or-epoch&gt;</code></li>
-<li><code>time.force &lt;iso-or-epoch&gt;</code></li>
+<li>the panel still uses the repeater admin password for access</li>
+<li>commands run with the same care as if you typed them into the repeater CLI directly</li>
+<li>this is intended for local admin use on a trusted network</li>
 </ul>
 <h2 id="companion-wifi-rescue-commands">Companion WiFi Rescue Commands<a class="headerlink" href="#companion-wifi-rescue-commands" title="Permanent link">&para;</a></h2>
 <p>These commands are available in the serial rescue CLI for <code>*_companion_radio_wifi</code> builds.</p>
