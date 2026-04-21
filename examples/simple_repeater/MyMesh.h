@@ -255,6 +255,7 @@ public:
   void formatRadioStatsReply(char *reply, size_t reply_size) override;
   void formatPacketStatsReply(char *reply, size_t reply_size) override;
   void formatMemoryReply(char *reply, size_t reply_size) override;
+  void prepareForOTAStart() override;
   void startRegionsLoad() override;
   bool saveRegions() override;
   void onDefaultRegionChanged(const RegionEntry* r) override;

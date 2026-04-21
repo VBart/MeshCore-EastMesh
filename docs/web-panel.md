@@ -277,7 +277,8 @@ On mobile:
 
 1. Press `Start OTA`.
 2. Confirm the action.
-3. Continue with your normal OTA workflow.
+3. The local repeater web panel is suspended until reboot so OTA can take over HTTP on port `80`.
+4. Continue with your normal OTA workflow.
 
 ### Use Historical Stats
 

@@ -68,7 +68,7 @@ Legacy dotted aliases are also accepted:
 ### Web Panel Controls
 
 - `get web`
-- `get web.status`: shows whether the local HTTPS panel is available.
+- `get web.status`: shows whether the local HTTPS panel is available. After `start ota`, this reports `web:suspended ota` until the repeater reboots.
 - `get web.stats.status`: shows whether the dedicated stats page and history subsystem are enabled, whether recent history is active, whether PSRAM-backed history is available, and whether the SD-backed archive is mounted. When enabled, the history capture now covers supported environment telemetry too, not just the original battery/radio series.
 - `set web on|off`
 - `set.web on|off`: enables or disables the local HTTPS panel.
@@ -123,6 +123,7 @@ Notes:
 - the panel still uses the repeater admin password for access
 - commands run with the same care as if you typed them into the repeater CLI directly
 - this is intended for local admin use on a trusted network
+- `start ota` suspends the local repeater web panel until reboot so the OTA HTTP listener can take over port `80`
 
 ## Companion WiFi Rescue Commands
 

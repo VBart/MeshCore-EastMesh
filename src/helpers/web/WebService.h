@@ -14,6 +14,7 @@ public:
   void begin(FILESYSTEM* fs);
   void end();
   void loop();
+  void suspendForOTA();
 
   void setCommandRunner(WebPanelCommandRunner* runner);
   void setNetworkStateProvider(NetworkStateProvider* network) { _network = network; }
@@ -38,4 +39,5 @@ private:
   WebPanelCommandRunner* _runner;
   NetworkStateProvider* _network;
   WebPanelServer _panel;
+  bool _suspended_for_ota;
 };

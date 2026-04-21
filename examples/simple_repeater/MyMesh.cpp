@@ -1973,6 +1973,12 @@ void MyMesh::clearStats() {
   ((SimpleMeshTables *)getTables())->resetStats();
 }
 
+void MyMesh::prepareForOTAStart() {
+#if defined(ESP_PLATFORM) && WITH_WEB_PANEL
+  web.suspendForOTA();
+#endif
+}
+
 void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply) {
   if (region_load_active) {
     if (StrHelper::isBlank(command)) {  // empty/blank line, signal to terminate 'load' operation

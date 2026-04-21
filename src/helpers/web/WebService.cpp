@@ -4,7 +4,7 @@
   #include <WiFi.h>
 #endif
 
-WebService::WebService() : _fs(nullptr), _prefs{}, _runner(nullptr), _network(nullptr) {
+WebService::WebService() : _fs(nullptr), _prefs{}, _runner(nullptr), _network(nullptr), _suspended_for_ota(false) {
   WebPrefsStore::setDefaults(_prefs);
 }
 
@@ -15,6 +15,13 @@ void WebService::begin(FILESYSTEM* fs) {
 
 void WebService::end() {
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
+  _panel.stop();
+#endif
+}
+
+void WebService::suspendForOTA() {
+#if defined(ESP_PLATFORM) && WITH_WEB_PANEL
+  _suspended_for_ota = true;
   _panel.stop();
 #endif
 }
@@ -39,9 +46,12 @@ bool WebService::savePrefs() {
 
 bool WebService::setWebEnabled(bool enabled) {
   _prefs.web_enabled = enabled ? 1 : 0;
+  if (!enabled) {
+    _suspended_for_ota = false;
+  }
   bool ok = savePrefs();
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
-  if (_prefs.web_enabled != 0) {
+  if (_prefs.web_enabled != 0 && !_suspended_for_ota) {
     ensureWebServer();
   } else {
     _panel.stop();
@@ -62,6 +72,11 @@ void WebService::formatWebStatusReply(char* reply, size_t reply_size) const {
     return;
   }
 
+  if (_suspended_for_ota) {
+    snprintf(reply, reply_size, "> web:suspended ota");
+    return;
+  }
+
   if (!_panel.isRunning() || _network == nullptr || !_network->isWifiConnected()) {
     snprintf(reply, reply_size, "> web:down");
     return;
@@ -76,7 +91,7 @@ void WebService::formatWebStatusReply(char* reply, size_t reply_size) const {
 
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
 void WebService::ensureWebServer() {
-  if (_runner == nullptr || _prefs.web_enabled == 0 || _network == nullptr || !_network->isWifiConnected()) {
+  if (_suspended_for_ota || _runner == nullptr || _prefs.web_enabled == 0 || _network == nullptr || !_network->isWifiConnected()) {
     _panel.stop();
     return;
   }
