@@ -204,6 +204,16 @@ bool ArchiveStorage::resolvePins() {
   _spi_bus = FSPI;
 #endif
   return true;
+#elif defined(TBEAM_1W)
+  // T-Beam 1W microSD shares the board SPI pins but uses its own chip select.
+  _sck_pin = 13;
+  _miso_pin = 12;
+  _mosi_pin = 11;
+  _cs_pin = 10;
+#if defined(FSPI)
+  _spi_bus = FSPI;
+#endif
+  return true;
 #elif defined(HAS_SDCARD) && defined(SDCARD_CS)
   _cs_pin = static_cast<uint8_t>(SDCARD_CS);
   #if defined(SPI_SCK) && defined(SPI_MISO) && defined(SPI_MOSI)
