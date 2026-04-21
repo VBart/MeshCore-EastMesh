@@ -365,3 +365,27 @@ releases:
         area: mqtt
         text: "Updated the custom CLI and web panel docs to describe the unset-first MQTT IATA flow and the resulting broker behaviour."
     breaking_changes: []
+
+  - track: repeater-mqtt
+    version: "1.3.8"
+    tag: "repeater-mqtt-eastmesh-v1.3.8"
+    date: "2026-04-21"
+    previous_version: "1.3.7"
+    summary: "Fixed repeater web radio preset application, added T-Beam 1W fan controls, and stabilised T-Beam 1W web stats by reusing the radio SPI bus for SD archive access."
+    changes:
+      - type: fixed
+        area: web-panel
+        text: "Fixed Radio Settings preset application in the repeater web panel so the generated `set radio` command uses the comma-separated format accepted by the CLI."
+      - type: added
+        area: board-support
+        text: "Added T-Beam 1W repeater fan CLI controls with persisted mode and post-TX timeout settings."
+      - type: added
+        area: board-support
+        text: "Added T-Beam 1W manual fan mode handling so `fan off` stays off, `fan on` stays on, and TX hold only applies while the board is in auto mode."
+      - type: fixed
+        area: stats
+        text: "Stabilised T-Beam 1W web stats with SD archive enabled by making archive access reuse the same SPI object as the LoRa radio on the board's shared SPI bus."
+      - type: docs
+        area: docs
+        text: "Updated the custom CLI docs for the T-Beam 1W fan controls and their persisted repeater behaviour."
+    breaking_changes: []
