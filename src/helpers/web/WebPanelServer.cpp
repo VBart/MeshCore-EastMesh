@@ -2394,7 +2394,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
         setRadioPresetStatus("Select a community preset first.", true);
         return;
       }
-      const command = `set radio ${preset.frequency} ${preset.bandwidth} ${preset.spreadingFactor} ${preset.codingRate}`;
+      const command = `set radio ${preset.frequency},${preset.bandwidth},${preset.spreadingFactor},${preset.codingRate}`;
       const result = await runCommand(command);
       if (!result.ok) {
         setRadioPresetStatus(parseReplyValue(result.text) || "Unable to apply radio preset.", true);
