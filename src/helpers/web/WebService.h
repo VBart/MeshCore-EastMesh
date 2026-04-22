@@ -15,6 +15,7 @@ public:
   void end();
   void loop();
   void suspendForOTA();
+  void prepareForOTAStart();
 
   void setCommandRunner(WebPanelCommandRunner* runner);
   void setNetworkStateProvider(NetworkStateProvider* network) { _network = network; }

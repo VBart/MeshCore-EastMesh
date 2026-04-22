@@ -1472,7 +1472,8 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
           : pctRange(core.battery_mv, batteryMin, batteryMax);
       const queuePct = pctRange(core.queue_len, 0, 12);
       const errorsPct = core.errors > 0 ? 100 : 0;
-      const batteryDetail = batteryMin < batteryMax
+      const usesBoardBatteryPercent = Number.isFinite(core.battery_pct) && core.battery_pct >= 0;
+      const batteryDetail = !usesBoardBatteryPercent && batteryMin < batteryMax
           ? (core.battery_mv || 0) + " mV (" + batteryMin + "-" + batteryMax + " mV)"
           : (core.battery_mv || 0) + " mV";
       return `<section class="hud-card">
@@ -2815,11 +2816,6 @@ esp_err_t WebPanelServer::handleCommand(httpd_req_t* req) {
 
   ctx->self->noteActivity();
   memset(reply, 0, kWebReplyBufferSize);
-  if (strcmp(command, "start ota") == 0) {
-    // OTA serves its own HTTP listener on port 80, so release the
-    // web-panel redirect listener first or it will keep owning that port.
-    ctx->self->stopRedirectServer();
-  }
   ctx->self->_runner->runWebCommand(command, reply, kWebReplyBufferSize);
   httpd_resp_set_type(req, "text/plain; charset=utf-8");
   httpd_resp_set_hdr(req, "Cache-Control", "no-store");
@@ -2934,6 +2930,9 @@ bool WebPanelServer::start() {
 }
 
 void WebPanelServer::stop() {
+}
+
+void WebPanelServer::stopRedirectServer() {
 }
 
 bool WebPanelServer::isRunning() const {

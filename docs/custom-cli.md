@@ -123,7 +123,7 @@ Notes:
 - the panel still uses the repeater admin password for access
 - commands run with the same care as if you typed them into the repeater CLI directly
 - this is intended for local admin use on a trusted network
-- `start ota` releases the local HTTP redirect listener on port `80` so the OTA HTTP listener can take over without stopping the rest of the repeater services
+- `start ota` releases the local HTTP redirect listener on port `80` so the OTA HTTP listener can take over without stopping the rest of the repeater services, regardless of whether the command is run from the web panel, serial CLI, or a remote companion/app CLI session
 
 ## Companion WiFi Rescue Commands
 

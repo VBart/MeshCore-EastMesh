@@ -233,7 +233,7 @@ For boards that expose extra telemetry, the optional `Environment` summary card 
 
 Metrics with no current value are hidden rather than showing placeholder rows, so the cards vary by board and by current sensor state.
 
-The `Core` battery meter prefers a board-reported battery percentage when the target exposes one. Otherwise it scales the displayed percentage from the board's configured battery voltage range rather than assuming a fixed single-cell `3000-4200 mV` pack.
+The `Core` battery meter prefers a board-reported battery percentage when the target exposes one. On those boards, the meter detail shows the live battery millivolt reading only. Otherwise it scales the displayed percentage from the board's configured battery voltage range and shows that range in the detail text rather than assuming a fixed single-cell `3000-4200 mV` pack.
 
 The trend graphs load sequentially rather than as one large payload:
 
@@ -314,6 +314,8 @@ On mobile:
 2. Confirm the action.
 3. The local HTTP redirect listener on port `80` is released so OTA can take over that port.
 4. Continue with your normal OTA workflow.
+
+If an older build sends you through a strange redirect after `start ota`, use the web `Start OTA` button to begin the upgrade anyway. The `repeater-mqtt-eastmesh-v1.3.11` release fixes that redirect issue.
 
 ### Use Historical Stats
 

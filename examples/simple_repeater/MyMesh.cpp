@@ -2056,6 +2056,9 @@ void MyMesh::clearStats() {
 }
 
 void MyMesh::prepareForOTAStart() {
+#if defined(ESP_PLATFORM) && WITH_WEB_PANEL
+  web.prepareForOTAStart();
+#endif
 }
 
 void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply) {

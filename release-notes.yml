@@ -455,3 +455,18 @@ releases:
         area: docs
         text: "Updated the web panel, API, and custom CLI docs to describe the board-aware battery display, the new MQTT client-version command, and the revised `/app` layout."
     breaking_changes: []
+
+  - track: repeater-mqtt
+    version: "1.3.11"
+    tag: "repeater-mqtt-eastmesh-v1.3.11"
+    date: "2026-04-23"
+    previous_version: "1.3.10"
+    summary: "Fixes the OTA start flow so the repeater web panel no longer falls into the old redirect glitch before upgrade."
+    changes:
+      - type: fixed
+        area: web-panel
+        text: "Fixed the repeater OTA start path so beginning an upgrade from the web panel no longer trips the earlier odd redirect behaviour before the OTA page loads."
+      - type: docs
+        area: web-panel
+        text: "Added a web-panel callout noting that if an older build hits the `start ota` redirect glitch, use the web `Start OTA` button to continue the upgrade, and that this release resolves the issue moving forward."
+    breaking_changes: []

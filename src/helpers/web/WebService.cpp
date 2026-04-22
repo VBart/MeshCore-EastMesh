@@ -26,6 +26,13 @@ void WebService::suspendForOTA() {
 #endif
 }
 
+void WebService::prepareForOTAStart() {
+#if defined(ESP_PLATFORM) && WITH_WEB_PANEL
+  _suspended_for_ota = true;
+  _panel.stopRedirectServer();
+#endif
+}
+
 void WebService::loop() {
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
   ensureWebServer();
@@ -91,8 +98,14 @@ void WebService::formatWebStatusReply(char* reply, size_t reply_size) const {
 
 #if defined(ESP_PLATFORM) && WITH_WEB_PANEL
 void WebService::ensureWebServer() {
-  if (_suspended_for_ota || _runner == nullptr || _prefs.web_enabled == 0 || _network == nullptr || !_network->isWifiConnected()) {
+  if (_runner == nullptr || _prefs.web_enabled == 0 || _network == nullptr || !_network->isWifiConnected()) {
     _panel.stop();
+    return;
+  }
+  if (_suspended_for_ota) {
+    if (_panel.isRunning()) {
+      _panel.stopRedirectServer();
+    }
     return;
   }
   if (_panel.isRunning()) {

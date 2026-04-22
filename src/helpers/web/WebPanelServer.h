@@ -41,6 +41,7 @@ public:
   void setCommandRunner(WebPanelCommandRunner* runner);
   bool start();
   void stop();
+  void stopRedirectServer();
   bool isRunning() const;
   bool hasSessionToken() const;
   bool shouldAutoLock(unsigned long now_ms) const;
@@ -71,7 +72,6 @@ private:
   void refreshToken();
   bool isAuthorized(httpd_req_t* req) const;
   void noteActivity();
-  void stopRedirectServer();
 #else
   WebPanelCommandRunner* _runner;
 #endif
