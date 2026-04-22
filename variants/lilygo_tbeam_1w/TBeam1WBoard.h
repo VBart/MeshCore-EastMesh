@@ -50,6 +50,8 @@ public:
   void onBeforeTransmit() override;
   void onAfterTransmit() override;
   uint16_t getBattMilliVolts() override;
+  uint16_t getBatteryMinMilliVolts() const override;
+  uint16_t getBatteryMaxMilliVolts() const override;
   const char* getManufacturerName() const override;
   void powerOff() override;
 

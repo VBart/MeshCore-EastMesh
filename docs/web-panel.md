@@ -130,7 +130,7 @@ This section runs common read-only commands for:
 - Wi-Fi
 - MQTT
 
-These are useful for quick checks without typing into the CLI field.
+These are useful for quick checks without typing into the CLI field. The MQTT quick actions include `mqtt.status`, `mqtt.client_version`, `mqtt.iata`, `mqtt.owner`, and `mqtt.email`.
 
 ## Run CLI Command
 
@@ -149,6 +149,7 @@ This makes it easy to see exactly what the panel sent to the repeater.
 This section includes:
 
 - Device Name
+- Clock UTC
 - Latitude
 - Longitude
 - Guest Password
@@ -164,6 +165,14 @@ Notes:
 - changing the private key requires a reboot to apply
 - the refresh buttons load the current value from the repeater
 - the save buttons send the matching CLI command immediately
+
+## Info
+
+This section shows:
+
+- `Version`: firmware version with build date
+- `Client Version`: MQTT client version string
+- `Public Key`
 
 ## Ghost Node Mode
 
@@ -223,6 +232,8 @@ The `/stats` page currently shows:
 For boards that expose extra telemetry, the optional `Environment` summary card can show current values such as GPS fix state, latitude, longitude, GPS altitude, voltage, sensor temperature, humidity, barometer, pressure-derived altitude, and MCU temperature.
 
 Metrics with no current value are hidden rather than showing placeholder rows, so the cards vary by board and by current sensor state.
+
+The `Core` battery meter prefers a board-reported battery percentage when the target exposes one. Otherwise it scales the displayed percentage from the board's configured battery voltage range rather than assuming a fixed single-cell `3000-4200 mV` pack.
 
 The trend graphs load sequentially rather than as one large payload:
 
@@ -301,7 +312,7 @@ On mobile:
 
 1. Press `Start OTA`.
 2. Confirm the action.
-3. The local repeater web panel is suspended until reboot so OTA can take over HTTP on port `80`.
+3. The local HTTP redirect listener on port `80` is released so OTA can take over that port.
 4. Continue with your normal OTA workflow.
 
 ### Use Historical Stats

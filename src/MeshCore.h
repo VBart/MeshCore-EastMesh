@@ -45,6 +45,8 @@ class MainBoard {
 public:
   virtual uint16_t getBattMilliVolts() = 0;
   virtual int getBatteryPercent() { return -1; }
+  virtual uint16_t getBatteryMinMilliVolts() const { return 3000; }
+  virtual uint16_t getBatteryMaxMilliVolts() const { return 4200; }
   virtual bool isCharging() { return false; }
   virtual bool isVbusPresent() { return false; }
   virtual float getMCUTemperature() { return NAN; }

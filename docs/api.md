@@ -153,6 +153,7 @@ Notes:
 - this summary view is also what the repo's web panel requests first before loading trend series
 - if `web.stats` is disabled, the endpoint returns `503 Service Unavailable`
 - supported boards may also include an optional `sensors` object in the summary payload for current GPS and environmental telemetry
+- the `core` object includes raw `battery_mv`, board-reported `battery_pct` when available, a UI-ready `battery_display_pct`, and board-specific `battery_min_mv` / `battery_max_mv` range hints used by `/stats` when the board does not expose its own battery percentage
 
 ### `GET /api/stats?series=<name>`
 

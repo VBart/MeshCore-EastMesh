@@ -576,6 +576,7 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
           <span class="label">MQTT</span>
           <div class="quick">
             <button data-cmd="get mqtt.status">mqtt.status</button>
+            <button data-cmd="get mqtt.client_version">mqtt.client_version</button>
             <button data-cmd="get mqtt.iata">mqtt.iata</button>
             <button data-cmd="get mqtt.owner">mqtt.owner</button>
             <button data-cmd="get mqtt.email">mqtt.email</button>
@@ -599,18 +600,15 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       <div class="stack">
         <div class="row">
           <div class="field-card">
-            <label class="label" for="roleValue">Role</label>
+            <label class="label" for="versionValue">Version</label>
             <div class="fieldline">
-              <input id="roleValue" readonly disabled>
-              <span class="placeholder-slot" aria-hidden="true"></span>
+              <input id="versionValue" readonly disabled>
             </div>
           </div>
           <div class="field-card">
-            <label class="label" for="clockUtc">Clock UTC</label>
-            <div class="inline-actions">
-              <input id="clockUtc" readonly disabled>
-              <button class="iconbtn" data-load-cmd="clock" data-load-input="clockUtc" title="Refresh clock UTC">&#8635;</button>
-              <button id="syncClockBtn" class="savebtn">Sync</button>
+            <label class="label" for="clientVersionValue">Client Version</label>
+            <div class="fieldline">
+              <input id="clientVersionValue" readonly disabled>
             </div>
           </div>
         </div>
@@ -629,12 +627,22 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       <div class="stack">
         <div class="section-group">
           <h3>Repeater Settings</h3>
-          <div class="field-card">
-            <label class="label" for="nodeName">Device Name</label>
-            <div class="inline-actions">
-              <input id="nodeName" placeholder="MeshCore-HOWL">
-              <button class="iconbtn" data-load-cmd="get name" data-load-input="nodeName" title="Refresh device name">&#8635;</button>
-              <button class="savebtn" data-prefix="set name " data-input="nodeName">Save</button>
+          <div class="row">
+            <div class="field-card">
+              <label class="label" for="nodeName">Device Name</label>
+              <div class="inline-actions">
+                <input id="nodeName" placeholder="MeshCore-HOWL">
+                <button class="iconbtn" data-load-cmd="get name" data-load-input="nodeName" title="Refresh device name">&#8635;</button>
+                <button class="savebtn" data-prefix="set name " data-input="nodeName">Save</button>
+              </div>
+            </div>
+            <div class="field-card">
+              <label class="label" for="clockUtc">Clock UTC</label>
+              <div class="inline-actions">
+                <input id="clockUtc" readonly disabled>
+                <button class="iconbtn" data-load-cmd="clock" data-load-input="clockUtc" title="Refresh clock UTC">&#8635;</button>
+                <button id="syncClockBtn" class="savebtn">Sync</button>
+              </div>
             </div>
           </div>
           <div class="row">
@@ -1457,13 +1465,20 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       };
     }
     function renderCoreCard(core) {
-      const batteryPct = pctRange(core.battery_mv, 3000, 4200);
+      const batteryMin = Number.isFinite(core.battery_min_mv) ? core.battery_min_mv : 3000;
+      const batteryMax = Number.isFinite(core.battery_max_mv) ? core.battery_max_mv : 4200;
+      const batteryPct = Number.isFinite(core.battery_display_pct)
+          ? clamp(core.battery_display_pct, 0, 100)
+          : pctRange(core.battery_mv, batteryMin, batteryMax);
       const queuePct = pctRange(core.queue_len, 0, 12);
       const errorsPct = core.errors > 0 ? 100 : 0;
+      const batteryDetail = batteryMin < batteryMax
+          ? (core.battery_mv || 0) + " mV (" + batteryMin + "-" + batteryMax + " mV)"
+          : (core.battery_mv || 0) + " mV";
       return `<section class="hud-card">
         <h3>Core</h3>
         <div class="core-grid">
-          ${renderMeter("Battery", Math.round(batteryPct) + "%", batteryPct, (core.battery_mv || 0) + " mV", false)}
+          ${renderMeter("Battery", Math.round(batteryPct) + "%", batteryPct, batteryDetail, false)}
           ${renderMeter("Queue", String(core.queue_len ?? 0), queuePct, "outbound packets", true)}
           ${renderMeter("Errors", String(core.errors ?? 0), errorsPct, "sticky error flags", true)}
         </div>
@@ -1798,6 +1813,10 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       return baseColor || "#2f8f4e";
     }
     function sparkValueRange(key, values) {
+      if (key === "packets" || key === "gps_satellites") {
+        const maxValue = Math.max(1, ...values);
+        return { min:0, max:maxValue };
+      }
       if (key === "signal") {
         return { min:(-125 * 4), max:(-30 * 4) };
       }
@@ -1881,21 +1900,25 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
         ctx.lineTo(plotRight, y);
         ctx.stroke();
       });
+      const slotWidth = (plotRight - plotLeft) / Math.max(points.length, 1);
       const coords = points.map((point, index) => ({
-        x: (index / Math.max(1, points.length - 1)) * (plotRight - plotLeft) + plotLeft,
+        x: (key === "packets" || key === "gps_satellites")
+            ? (plotLeft + (slotWidth * index) + (slotWidth / 2))
+            : ((index / Math.max(1, points.length - 1)) * (plotRight - plotLeft) + plotLeft),
         y: scaleY(point[1])
       }));
       const strokeColor = sparkStrokeColor(key, points);
       if (key === "packets" || key === "gps_satellites") {
-        const slotWidth = (plotRight - plotLeft) / Math.max(points.length, 1);
         const barWidth = Math.max(3, Math.min(18, slotWidth * 0.68));
         const hoverColor = sparkHoverColor(key, strokeColor);
         coords.forEach((point, index) => {
-          const left = clamp(point.x - (barWidth / 2), plotLeft, plotRight - barWidth);
+          const left = plotLeft + (slotWidth * index) + ((slotWidth - barWidth) / 2);
           const top = point.y;
-          const barHeight = Math.max(1, plotBottom - top);
+          const barHeight = Math.max(0, plotBottom - top);
           ctx.fillStyle = Number.isInteger(hoverIndex) && hoverIndex === index ? hoverColor : strokeColor;
-          ctx.fillRect(left, top, barWidth, barHeight);
+          if (barHeight > 0) {
+            ctx.fillRect(left, top, barWidth, barHeight);
+          }
         });
         return;
       }
@@ -2516,7 +2539,8 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       const quiet = { recordHistory:false, updateInput:false };
       try {
         await loadSection("Loading info...", [
-          () => loadField("get role", "roleValue", null, quiet),
+          () => loadField("ver", "versionValue", null, quiet),
+          () => loadField("get mqtt.client_version", "clientVersionValue", null, quiet),
           () => loadField("clock", "clockUtc", null, quiet),
           () => loadField("get public.key", "publicKey", "uppercase", quiet)
         ]);

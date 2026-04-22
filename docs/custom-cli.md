@@ -12,6 +12,7 @@ These commands are available on `*_repeater_mqtt` firmware targets.
 
 - `get mqtt.status`: shows WiFi, NTP, IATA, endpoint status, status publishing state, and TX state.
 - `get mqtt.statuscfg`: shows whether periodic status messages are enabled as a simple `on` or `off` value. Most users can just use `get mqtt.status`.
+- `get mqtt.client_version`: shows the MQTT `client_version` string published by the repeater.
 - `get mqtt.iata`: shows the IATA/location code used in MQTT topics.
 - `set mqtt.iata <code>`: sets the IATA/location code, for example `MEL`.
 - `set mqtt.iata UNSET`: marks MQTT IATA as not configured yet. While it is `UNSET`, enabled MQTT brokers stay disconnected until a real code is saved.
@@ -68,7 +69,7 @@ Legacy dotted aliases are also accepted:
 ### Web Panel Controls
 
 - `get web`
-- `get web.status`: shows whether the local HTTPS panel is available. After `start ota`, this reports `web:suspended ota` until the repeater reboots.
+- `get web.status`: shows whether the local HTTPS panel is available.
 - `get web.stats.status`: shows whether the dedicated stats page and history subsystem are enabled, whether recent history is active, whether PSRAM-backed history is available, and whether the SD-backed archive is mounted. When enabled, the history capture now covers supported environment telemetry too, not just the original battery/radio series. GPS-enabled boards also record per-minute satellites samples for the `/stats` history view.
 - `set web on|off`
 - `set.web on|off`: enables or disables the local HTTPS panel.
@@ -122,7 +123,7 @@ Notes:
 - the panel still uses the repeater admin password for access
 - commands run with the same care as if you typed them into the repeater CLI directly
 - this is intended for local admin use on a trusted network
-- `start ota` suspends the local repeater web panel until reboot so the OTA HTTP listener can take over port `80`
+- `start ota` releases the local HTTP redirect listener on port `80` so the OTA HTTP listener can take over without stopping the rest of the repeater services
 
 ## Companion WiFi Rescue Commands
 

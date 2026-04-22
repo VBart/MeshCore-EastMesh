@@ -28,6 +28,15 @@
 
 namespace {
 
+int clampBatteryPercentFromRange(uint16_t battery_mv, uint16_t min_mv, uint16_t max_mv) {
+  if (max_mv <= min_mv) {
+    return 0;
+  }
+  const long scaled = (static_cast<long>(battery_mv) - static_cast<long>(min_mv)) * 100L /
+                      static_cast<long>(max_mv - min_mv);
+  return std::max(0L, std::min(100L, scaled));
+}
+
 WebSensorSnapshot collectWebSensorSnapshot(mesh::MainBoard& board, SensorManager& sensors, uint16_t battery_mv) {
   WebSensorSnapshot snapshot;
   snapshot.has_battery = true;
@@ -2047,9 +2056,6 @@ void MyMesh::clearStats() {
 }
 
 void MyMesh::prepareForOTAStart() {
-#if defined(ESP_PLATFORM) && WITH_WEB_PANEL
-  web.suspendForOTA();
-#endif
 }
 
 void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply) {
@@ -2279,6 +2285,8 @@ void MyMesh::handleCommand(uint32_t sender_timestamp, char *command, char *reply
     sprintf(reply, "> %s", mqtt.isStatusEnabled() ? "on" : "off");
   } else if (strcmp(command, "get mqtt.status") == 0) {
     mqtt.formatStatusReply(reply, 160);
+  } else if (strcmp(command, "get mqtt.client_version") == 0) {
+    sprintf(reply, "> %s", mqtt.getClientVersion());
   } else if (memcmp(command, "get mqtt.iata", 13) == 0) {
     sprintf(reply, "> %s", mqtt.getIata());
   } else if (memcmp(command, "get mqtt.owner", 14) == 0) {
@@ -2481,6 +2489,11 @@ bool MyMesh::formatWebStatsSummaryJson(char* reply, size_t reply_size) {
 
   const uint16_t battery_mv = getBatteryMilliVolts(true);
   const int battery_pct = board.getBatteryPercent();
+  const uint16_t battery_min_mv = board.getBatteryMinMilliVolts();
+  const uint16_t battery_max_mv = board.getBatteryMaxMilliVolts();
+  const int battery_display_pct =
+      (battery_pct >= 0) ? std::max(0, std::min(100, battery_pct))
+                         : clampBatteryPercentFromRange(battery_mv, battery_min_mv, battery_max_mv);
   const WebSensorSnapshot sensor_snapshot = collectWebSensorSnapshot(board, sensors, battery_mv);
   const bool archive_available = (_archive != nullptr) && _archive->isMounted();
 #ifdef WITH_MQTT_UPLINK
@@ -2510,7 +2523,8 @@ bool MyMesh::formatWebStatsSummaryJson(char* reply, size_t reply_size) {
                      "\"events\":%u,\"event_capacity\":%u},"
                      "\"archive\":{\"logical\":\"%s\",\"available\":%s,\"path\":\"%s\",\"type\":\"%s\","
                      "\"total_bytes\":%llu,\"used_bytes\":%llu},"
-                     "\"core\":{\"battery_mv\":%u,\"battery_pct\":%d,\"uptime_secs\":%lu,\"errors\":%u,\"queue_len\":%u,"
+                     "\"core\":{\"battery_mv\":%u,\"battery_pct\":%d,\"battery_display_pct\":%d,\"battery_min_mv\":%u,\"battery_max_mv\":%u,"
+                     "\"uptime_secs\":%lu,\"errors\":%u,\"queue_len\":%u,"
                      "\"external_power\":%s,\"charging\":%s,\"vbus\":%s},"
                      "\"radio\":{\"noise_floor\":%d,\"last_rssi\":%.2f,\"last_snr\":%.2f,\"tx_air_secs\":%lu,\"rx_air_secs\":%lu},"
                      "\"packets\":{\"recv\":%u,\"sent\":%u,\"flood_tx\":%u,\"direct_tx\":%u,\"flood_rx\":%u,\"direct_rx\":%u,"
@@ -2539,6 +2553,9 @@ bool MyMesh::formatWebStatsSummaryJson(char* reply, size_t reply_size) {
                      static_cast<unsigned long long>(_archive != nullptr ? _archive->getUsedBytes() : 0),
                      battery_mv,
                      battery_pct,
+                     battery_display_pct,
+                     battery_min_mv,
+                     battery_max_mv,
                      static_cast<unsigned long>(uptime_millis / 1000),
                      _err_flags,
                      static_cast<unsigned>(_mgr->getOutboundTotal()),

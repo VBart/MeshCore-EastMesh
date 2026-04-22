@@ -66,6 +66,14 @@ uint16_t TBeam1WBoard::getBattMilliVolts() {
   return static_cast<uint16_t>((raw * 3300 * ADC_MULTIPLIER) / 4095);
 }
 
+uint16_t TBeam1WBoard::getBatteryMinMilliVolts() const {
+  return 6000;
+}
+
+uint16_t TBeam1WBoard::getBatteryMaxMilliVolts() const {
+  return 8400;
+}
+
 const char* TBeam1WBoard::getManufacturerName() const {
   return "LilyGo T-Beam 1W";
 }

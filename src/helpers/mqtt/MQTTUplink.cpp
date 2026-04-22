@@ -116,6 +116,10 @@ MQTTUplink::MQTTUplink(mesh::RTCClock& rtc, mesh::LocalIdentity& identity)
   MQTT_LOG("uplink init");
 }
 
+const char* MQTTUplink::getClientVersion() const {
+  return CLIENT_VERSION;
+}
+
 bool MQTTUplink::savePrefs() {
   return MQTTPrefsStore::save(_fs, _prefs);
 }
