@@ -951,6 +951,7 @@
 <li>commands run with the same care as if you typed them into the repeater CLI directly</li>
 <li>this is intended for local admin use on a trusted network</li>
 <li><code>start ota</code> releases the local HTTP redirect listener on port <code>80</code> so the OTA HTTP listener can take over without stopping the rest of the repeater services, regardless of whether the command is run from the web panel, serial CLI, or a remote companion/app CLI session</li>
+<li>the <code>/app</code> Regions shortcut runs the existing MeshCore region commands in sequence: <code>region put au</code>, <code>region put au-STATE</code>, <code>region allowf au</code>, <code>region allowf au-STATE</code>, then <code>region save</code></li>
 </ul>
 <h2 id="companion-wifi-rescue-commands">Companion WiFi Rescue Commands<a class="headerlink" href="#companion-wifi-rescue-commands" title="Permanent link">&para;</a></h2>
 <p>These commands are available in the serial rescue CLI for <code>*_companion_radio_wifi</code> builds.</p>

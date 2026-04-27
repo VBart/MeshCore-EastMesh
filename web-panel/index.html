@@ -573,6 +573,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#radio-settings-and-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radio Settings And Regions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#info" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1117,6 +1128,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#radio-settings-and-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radio Settings And Regions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#info" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1527,6 +1549,8 @@
 <li>the refresh buttons load the current value from the repeater</li>
 <li>the save buttons send the matching CLI command immediately</li>
 </ul>
+<h2 id="radio-settings-and-regions">Radio Settings And Regions<a class="headerlink" href="#radio-settings-and-regions" title="Permanent link">&para;</a></h2>
+<p>The <code>Radio Settings</code> section includes the community radio preset selector, path hash mode, and a <code>Region (Australia)</code> dropdown derived from the state groups used by the MQTT IATA selector. The dropdown is preselected only when the repeater already has a matching allowed <code>au-STATE</code> region. Pressing the region <code>Save</code> button creates and allows the base <code>au</code> region plus the selected state region, then persists the region map with <code>region save</code>.</p>
 <h2 id="info">Info<a class="headerlink" href="#info" title="Permanent link">&para;</a></h2>
 <p>This section shows:</p>
 <ul>
@@ -1582,6 +1606,7 @@
 <li><code>Neighbours</code>: current neighbour table with ID, SNR, heard age, and advert age</li>
 <li><code>Events</code>: current boot/session events</li>
 </ul>
+<p>Planned MQTT JWT rotations are shown as <code>mqtt_token_refreshed</code> events instead of a short <code>mqtt_disconnected</code> / <code>mqtt_connected</code> pair.</p>
 <p>For boards that expose extra telemetry, the optional <code>Environment</code> summary card can show current values such as GPS fix state, latitude, longitude, GPS altitude, voltage, sensor temperature, humidity, barometer, pressure-derived altitude, and MCU temperature.</p>
 <p>Metrics with no current value are hidden rather than showing placeholder rows, so the cards vary by board and by current sensor state.</p>
 <p>The <code>Core</code> battery meter prefers a board-reported battery percentage when the target exposes one. On those boards, the meter detail shows the live battery millivolt reading only. Otherwise it scales the displayed percentage from the board's configured battery voltage range and shows that range in the detail text rather than assuming a fixed single-cell <code>3000-4200 mV</code> pack.</p>
