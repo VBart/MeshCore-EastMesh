@@ -6,9 +6,11 @@ MeshCore-EastMesh originates from the upstream MeshCore project:
 
 Credits to Scott Powell / Ripple Radios and the MeshCore contributors for the original firmware and project foundation.
 
-EastMesh firmware builds for MeshCore, with MQTT repeaters, WiFi companions, and simple release downloads for supported boards.
+EastMesh is a community-driven mesh network across Eastern Australia. This repository provides tailored builds of MeshCore, including WiFi companion firmware with additional CLI tools and MQTT-enabled repeater builds that integrate with our CoreScope telemetry platform.
 
-This repository keeps the upstream MeshCore firmware intact and adds an EastMesh layer on top for packaging, release automation, WiFi-enabled companion builds, and MQTT-enabled repeater builds.
+CoreScope (<https://core.eastmesh.au>) offers visibility into the network, including repeater status, observers, and mapping data.
+
+**MQTT repeater builds feed EastMesh Core telemetry and are intended for Eastern Australia repeaters only**; running them elsewhere can skew shared network data.
 
 ## What This Repo Adds
 
