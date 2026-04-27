@@ -392,11 +392,13 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
     button.action-dreamy { background:linear-gradient(135deg,#4e7ac7,#8b7cf6); color:#f7f7ff; border:none; }
     button.action-dreamy:hover { background:linear-gradient(135deg,#5c89d4,#9a8cff); }
     .stack { display:grid; gap:12px; }
-    .field-card { display:grid; gap:10px; }
+    .field-card { display:grid; gap:6px; align-content:start; }
     .section-group { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; display:grid; gap:12px; }
     .section-group h3 { margin:0; font-size:13px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
     .inline-actions { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px; align-items:center; }
-    .label { font-size:12px; color:var(--text-muted); margin-bottom:6px; display:block; }
+    .inline-actions.two-actions { grid-template-columns:minmax(0,1fr) auto; }
+    .label { font-size:12px; color:var(--text-muted); margin:0; display:block; }
+    .field-card > div > .label + .fieldline, .field-card > div > .label + .inline-actions, .stack > div > .label + .quick { margin-top:6px; }
     .fieldline { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
     .iconbtn { width:44px; padding:12px 0; }
     .placeholder-slot { display:block; width:44px; height:44px; }
@@ -733,16 +735,28 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
             </div>
             <div id="radioPresetStatus" class="panel-status"></div>
           </div>
-          <div class="field-card">
-            <label class="label" for="pathHashMode">Path Hash Mode</label>
-            <div class="inline-actions">
-              <select id="pathHashMode">
-                <option value="0">1-byte</option>
-                <option value="1">2-byte</option>
-                <option value="2">3-byte</option>
-              </select>
-              <button class="iconbtn" data-load-cmd="get path.hash.mode" data-load-input="pathHashMode" title="Refresh path hash mode">&#8635;</button>
-              <button class="savebtn" data-prefix="set path.hash.mode " data-input="pathHashMode">Save</button>
+          <div class="row">
+            <div class="field-card">
+              <label class="label" for="pathHashMode">Path Hash Mode</label>
+              <div class="inline-actions">
+                <select id="pathHashMode">
+                  <option value="0">1-byte</option>
+                  <option value="1">2-byte</option>
+                  <option value="2">3-byte</option>
+                </select>
+                <button class="iconbtn" data-load-cmd="get path.hash.mode" data-load-input="pathHashMode" title="Refresh path hash mode">&#8635;</button>
+                <button class="savebtn" data-prefix="set path.hash.mode " data-input="pathHashMode">Save</button>
+              </div>
+            </div>
+            <div class="field-card">
+              <label class="label" for="regionState">Region (Australia)</label>
+              <div class="inline-actions two-actions">
+                <select id="regionState">
+                  <option value="">Select state</option>
+                </select>
+                <button id="saveRegionBtn" class="savebtn">Save</button>
+              </div>
+              <div id="regionStatus" class="panel-status"></div>
             </div>
           </div>
         </div>
@@ -1009,6 +1023,14 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
     const RADIO_PRESETS_URL = "https://api.meshcore.nz/api/v1/config";
     const isStatsPage = window.location.pathname === "/stats";
     const PANEL_TITLE_KEY = "repeater-panel-title";
+    const REGION_STATE_CODES = {
+      "ACT": "act",
+      "New South Wales": "nsw",
+      "Queensland": "qld",
+      "South Australia": "sa",
+      "Tasmania": "tas",
+      "Victoria": "vic"
+    };
     let token = sessionStorage.getItem("repeater-token") || "";
     let commandQueue = Promise.resolve();
     let radioPresetEntries = [];
@@ -1206,6 +1228,84 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
       if (!el) return;
       el.textContent = message || "";
       el.style.color = isError ? "var(--status-red)" : "var(--text-muted)";
+    }
+    function setRegionStatus(message, isError) {
+      const el = document.getElementById("regionStatus");
+      if (!el) return;
+      el.textContent = message || "";
+      el.style.color = isError ? "var(--status-red)" : "var(--text-muted)";
+    }
+    function selectHasOption(selectEl, value) {
+      if (!selectEl) return false;
+      for (const option of selectEl.options) {
+        if (option.value === value) return true;
+      }
+      return false;
+    }
+    function buildRegionStateOptions() {
+      const regionSelect = document.getElementById("regionState");
+      const mqttSelect = document.getElementById("mqttIata");
+      if (!regionSelect || !mqttSelect) return;
+      const previous = regionSelect.value;
+      const seen = new Set();
+      const options = ['<option value="">Select state</option>'];
+      mqttSelect.querySelectorAll("optgroup").forEach((group) => {
+        const label = group.label || "";
+        const code = REGION_STATE_CODES[label];
+        if (!code || seen.has(code)) return;
+        seen.add(code);
+        const value = "au-" + code;
+        options.push(`<option value="${escapeHtml(value)}">${escapeHtml(label)} (${escapeHtml(value)})</option>`);
+      });
+      regionSelect.innerHTML = options.join("");
+      if (previous && selectHasOption(regionSelect, previous)) {
+        regionSelect.value = previous;
+      } else {
+        regionSelect.value = "";
+      }
+    }
+    async function loadRegionSelection(options = {}) {
+      const regionSelect = document.getElementById("regionState");
+      if (!regionSelect) return;
+      const result = await runCommand("region list allowed", options);
+      if (!result.ok) {
+        regionSelect.value = "";
+        return;
+      }
+      const allowed = parseReplyValue(result.text).toLowerCase().split(",").map((item) => item.trim());
+      for (const value of allowed) {
+        if (value.startsWith("au-") && selectHasOption(regionSelect, value)) {
+          regionSelect.value = value;
+          setRegionStatus("", false);
+          return;
+        }
+      }
+      regionSelect.value = "";
+      setRegionStatus("", false);
+    }
+    async function saveRegionSelection() {
+      const regionSelect = document.getElementById("regionState");
+      if (!regionSelect || !regionSelect.value) {
+        setRegionStatus("Select an AU state region first.", true);
+        return;
+      }
+      const region = regionSelect.value;
+      const commands = [
+        "region put au",
+        "region put " + region,
+        "region allowf au",
+        "region allowf " + region,
+        "region save"
+      ];
+      setRegionStatus("Saving regions...", false);
+      for (const command of commands) {
+        const result = await runCommand(command);
+        if (!result.ok) {
+          setRegionStatus(parseReplyValue(result.text) || ("Unable to apply: " + command), true);
+          return;
+        }
+      }
+      setRegionStatus("Saved au and " + region + ".", false);
     }
     function setGhostNodeModeStatus(message, isError) {
       const el = document.getElementById("ghostNodeModeStatus");
@@ -2379,6 +2479,8 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
 	    if (mqttIataSelect) {
 	      mqttIataSelect.addEventListener("change", refreshMqttIataWarning);
 	    }
+	    buildRegionStateOptions();
+	    document.getElementById("saveRegionBtn").onclick = () => saveRegionSelection();
 	    async function setEastmeshMode(enabled) {
 	      if (enabled && getLetsmeshMode() === "both") {
 	        await setLetsmeshMode("eu");
@@ -2554,7 +2656,8 @@ const char kWebPanelAppHtml[] PROGMEM = R"HTML(
         ]);
         await loadSection("Loading radio settings...", [
           () => loadRadioConfig(quiet),
-          () => loadField("get path.hash.mode", "pathHashMode", null, quiet)
+          () => loadField("get path.hash.mode", "pathHashMode", null, quiet),
+          () => loadRegionSelection(quiet)
         ]);
         await loadSection("Loading advertising...", [
           () => loadField("get advert.interval", "advertInterval", null, quiet),
