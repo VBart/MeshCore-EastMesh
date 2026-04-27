@@ -479,3 +479,24 @@ releases:
         area: web-panel
         text: "Updated the web panel and custom CLI docs to note the OTA redirect fallback on older builds and to describe the consistent `start ota` handling across command sources."
     breaking_changes: []
+
+  - track: repeater-mqtt
+    version: "1.3.12"
+    tag: "repeater-mqtt-eastmesh-v1.3.12"
+    date: "2026-04-27"
+    previous_version: "1.3.11"
+    summary: "Hardens T-Beam 1W SD archive access, reduces planned MQTT JWT refresh noise in `/stats`, and adds an Australian region shortcut to the repeater web panel."
+    changes:
+      - type: fixed
+        area: board-support
+        text: "Hardened T-Beam 1W SD archive mounting and recovery on the shared SPI bus by deasserting other chip selects, using a conservative SD SPI clock, and avoiding unnecessary SPI reinitialisation during recovery."
+      - type: changed
+        area: mqtt
+        text: "Extended MQTT JWT lifetime and marked planned token refresh reconnects so `/stats` records `mqtt_token_refreshed` instead of a misleading short disconnect/connect event pair."
+      - type: added
+        area: web-panel
+        text: "Added a `Region (Australia)` selector under `/app` Radio Settings that creates and allows the base `au` region plus the selected `au-STATE` region, then persists the region map."
+      - type: docs
+        area: web-panel
+        text: "Updated the web panel and custom CLI docs for the planned MQTT token-refresh event and the new web-panel region shortcut."
+    breaking_changes: []
