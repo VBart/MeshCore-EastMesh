@@ -185,6 +185,7 @@ class MyMesh : public mesh::Mesh, public CommonCLICallbacks, public WebPanelComm
     bool web_panel_up;
     bool archive_mounted;
     bool low_memory;
+    uint32_t mqtt_token_refresh_count;
     uint32_t last_low_memory_event_uptime_secs;
   } _stats_state;
 

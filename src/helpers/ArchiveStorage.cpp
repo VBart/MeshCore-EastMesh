@@ -31,6 +31,23 @@ const char* cardTypeName(uint8_t type) {
       return "unknown";
   }
 }
+
+uint32_t archiveSpiFrequencyHz() {
+#if defined(TBEAM_1W)
+  // The 1W board shares SD and LoRa on one SPI bus; keep SD conservative.
+  return 4000000U;
+#else
+  return 10000000U;
+#endif
+}
+
+void deassertChipSelect(int pin, uint8_t archive_cs_pin) {
+  if (pin < 0 || pin == static_cast<int>(archive_cs_pin)) {
+    return;
+  }
+  pinMode(static_cast<uint8_t>(pin), OUTPUT);
+  digitalWrite(static_cast<uint8_t>(pin), HIGH);
+}
 #endif
 
 }  // namespace
@@ -59,18 +76,18 @@ bool mountArchiveSd(SPIClass* spi,
                     uint8_t cs_pin,
                     uint8_t sck_pin,
                     uint8_t miso_pin,
-                    uint8_t mosi_pin) {
+                    uint8_t mosi_pin,
+                    bool initialize_spi) {
   if (spi == nullptr) {
     return false;
   }
-#if defined(P_BOARD_IMU_CS)
-  pinMode(P_BOARD_IMU_CS, OUTPUT);
-  digitalWrite(P_BOARD_IMU_CS, HIGH);
-#endif
   pinMode(cs_pin, OUTPUT);
   digitalWrite(cs_pin, HIGH);
-  spi->begin(sck_pin, miso_pin, mosi_pin, cs_pin);
-  return SD.begin(cs_pin, *spi, 10000000U);
+  if (initialize_spi) {
+    spi->begin(sck_pin, miso_pin, mosi_pin, cs_pin);
+  }
+  delayMicroseconds(2);
+  return SD.begin(cs_pin, *spi, archiveSpiFrequencyHz());
 }
 
 }  // namespace
@@ -106,7 +123,8 @@ void ArchiveStorage::begin() {
     }
   }
 
-  if (!mountArchiveSd(_spi, _spi_bus, _cs_pin, _sck_pin, _miso_pin, _mosi_pin)) {
+  prepareBusForArchive();
+  if (!mountArchiveSd(_spi, _spi_bus, _cs_pin, _sck_pin, _miso_pin, _mosi_pin, true)) {
     _mount_failed = true;
     ARCHIVE_LOG("mount failed bus=%u cs=%u sck=%u miso=%u mosi=%u",
                 static_cast<unsigned>(_spi_bus),
@@ -118,16 +136,19 @@ void ArchiveStorage::begin() {
   }
 
   _mounted = true;
+  prepareBusForArchive();
   if (!SD.exists(getFsStatsPath())) {
     SD.mkdir(getFsStatsPath());
   }
   refreshCardInfo();
-  ARCHIVE_LOG("mounted type=%s card=%llu total=%llu used=%llu path=%s",
+  ARCHIVE_LOG("mounted type=%s card=%llu total=%llu used=%llu path=%s freq=%lu shared=%s",
               getCardTypeName(),
               static_cast<unsigned long long>(_card_size_bytes),
               static_cast<unsigned long long>(_total_bytes),
               static_cast<unsigned long long>(_used_bytes),
-              getLogicalStatsPath());
+              getLogicalStatsPath(),
+              static_cast<unsigned long>(archiveSpiFrequencyHz()),
+              _owns_spi ? "no" : "yes");
 #else
   _supported = false;
 #endif
@@ -150,23 +171,27 @@ bool ArchiveStorage::recover() {
   _total_bytes = 0;
   _used_bytes = 0;
 
-  if (!mountArchiveSd(_spi, _spi_bus, _cs_pin, _sck_pin, _miso_pin, _mosi_pin)) {
+  prepareBusForArchive();
+  if (!mountArchiveSd(_spi, _spi_bus, _cs_pin, _sck_pin, _miso_pin, _mosi_pin, _owns_spi)) {
     _mount_failed = true;
     ARCHIVE_LOG("recover failed bus=%u cs=%u", static_cast<unsigned>(_spi_bus), static_cast<unsigned>(_cs_pin));
     return false;
   }
 
   _mounted = true;
+  prepareBusForArchive();
   if (!SD.exists(getFsStatsPath())) {
     SD.mkdir(getFsStatsPath());
   }
   refreshCardInfo();
-  ARCHIVE_LOG("recover mounted type=%s card=%llu total=%llu used=%llu path=%s",
+  ARCHIVE_LOG("recover mounted type=%s card=%llu total=%llu used=%llu path=%s freq=%lu shared=%s",
               getCardTypeName(),
               static_cast<unsigned long long>(_card_size_bytes),
               static_cast<unsigned long long>(_total_bytes),
               static_cast<unsigned long long>(_used_bytes),
-              getLogicalStatsPath());
+              getLogicalStatsPath(),
+              static_cast<unsigned long>(archiveSpiFrequencyHz()),
+              _owns_spi ? "no" : "yes");
   return true;
 #else
   return false;
@@ -179,7 +204,11 @@ bool ArchiveStorage::isSupported() const {
 
 FILESYSTEM* ArchiveStorage::getFS() {
 #if defined(ESP32)
-  return _mounted ? &SD : nullptr;
+  if (!_mounted) {
+    return nullptr;
+  }
+  prepareBusForArchive();
+  return &SD;
 #else
   return nullptr;
 #endif
@@ -197,6 +226,21 @@ const char* ArchiveStorage::getCardTypeName() const {
 }
 
 #if defined(ESP32)
+void ArchiveStorage::prepareBusForArchive() const {
+#if defined(P_BOARD_IMU_CS)
+  deassertChipSelect(P_BOARD_IMU_CS, _cs_pin);
+#endif
+#if defined(P_LORA_NSS)
+  deassertChipSelect(P_LORA_NSS, _cs_pin);
+#endif
+#if defined(SX126X_CS)
+  deassertChipSelect(SX126X_CS, _cs_pin);
+#endif
+  pinMode(_cs_pin, OUTPUT);
+  digitalWrite(_cs_pin, HIGH);
+  delayMicroseconds(2);
+}
+
 bool ArchiveStorage::resolvePins() {
 #if defined(P_BOARD_SPI_SCK) && defined(P_BOARD_SPI_MISO) && defined(P_BOARD_SPI_MOSI) && defined(P_BOARD_SPI_CS)
   _sck_pin = static_cast<uint8_t>(P_BOARD_SPI_SCK);

@@ -166,6 +166,10 @@ Notes:
 - the refresh buttons load the current value from the repeater
 - the save buttons send the matching CLI command immediately
 
+## Radio Settings And Regions
+
+The `Radio Settings` section includes the community radio preset selector, path hash mode, and a `Region (Australia)` dropdown derived from the state groups used by the MQTT IATA selector. The dropdown is preselected only when the repeater already has a matching allowed `au-STATE` region. Pressing the region `Save` button creates and allows the base `au` region plus the selected state region, then persists the region map with `region save`.
+
 ## Info
 
 This section shows:
@@ -228,6 +232,8 @@ The `/stats` page currently shows:
 - `Trends`: battery, heap free, packet activity, signal, noise floor, and, when GPS is enabled, satellites
 - `Neighbours`: current neighbour table with ID, SNR, heard age, and advert age
 - `Events`: current boot/session events
+
+Planned MQTT JWT rotations are shown as `mqtt_token_refreshed` events instead of a short `mqtt_disconnected` / `mqtt_connected` pair.
 
 For boards that expose extra telemetry, the optional `Environment` summary card can show current values such as GPS fix state, latitude, longitude, GPS altitude, voltage, sensor temperature, humidity, barometer, pressure-derived altitude, and MCU temperature.
 

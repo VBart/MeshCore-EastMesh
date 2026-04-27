@@ -43,8 +43,9 @@
 namespace {
 constexpr unsigned long kBrokerRetryBaseMillis = 10000;
 constexpr unsigned long kBrokerRetryMaxMillis = 300000;
+constexpr unsigned long kTokenRefreshEventWindowMs = 2UL * 60UL * 1000UL;
 constexpr size_t kBrokerTokenSize = 640;
-constexpr time_t kTokenLifetimeSecs = 3600;
+constexpr time_t kTokenLifetimeSecs = 6UL * 60UL * 60UL;
 constexpr time_t kTokenRefreshSlackSecs = 300;
 constexpr time_t kMinSaneEpoch = 1735689600;  // 2025-01-01T00:00:00Z
 
@@ -104,8 +105,8 @@ const MQTTUplink::BrokerSpec MQTTUplink::kBrokerSpecs[3] = {
 };
 
 MQTTUplink::MQTTUplink(mesh::RTCClock& rtc, mesh::LocalIdentity& identity)
-    : _fs(nullptr), _rtc(&rtc), _identity(&identity), _running(false), _last_status_publish(0), _last_status{},
-      _node_name(nullptr), _network(nullptr)
+    : _fs(nullptr), _rtc(&rtc), _identity(&identity), _running(false), _last_status_publish(0),
+      _token_refresh_count(0), _token_refresh_active_until_ms(0), _last_status{}, _node_name(nullptr), _network(nullptr)
        {
   memset(_device_id, 0, sizeof(_device_id));
   MQTTPrefsStore::setDefaults(_prefs);
@@ -122,6 +123,11 @@ const char* MQTTUplink::getClientVersion() const {
 
 bool MQTTUplink::savePrefs() {
   return MQTTPrefsStore::save(_fs, _prefs);
+}
+
+bool MQTTUplink::isTokenRefreshInProgress() const {
+  return _token_refresh_active_until_ms != 0 &&
+         static_cast<long>(millis() - _token_refresh_active_until_ms) < 0;
 }
 
 bool MQTTUplink::hasEnabledBroker() const {
@@ -622,11 +628,15 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
   }
 
   time_t now = time(nullptr);
+  unsigned long now_ms = millis();
   if (broker.client != nullptr && broker.token_expires_at > 0 && now + kTokenRefreshSlackSecs >= broker.token_expires_at) {
+    _token_refresh_count++;
+    _token_refresh_active_until_ms = now_ms + kTokenRefreshEventWindowMs;
+    MQTT_LOG("%s token refresh reconnect count=%lu", broker.spec->label,
+             static_cast<unsigned long>(_token_refresh_count));
     destroyBroker(broker, false);
   }
 
-  unsigned long now_ms = millis();
   if (broker.client != nullptr) {
     if (broker.connected) {
       return;
@@ -1000,8 +1010,8 @@ const char* MQTTUplink::getAggregateBrokerState() const {
 #else
 
 MQTTUplink::MQTTUplink(mesh::RTCClock&, mesh::LocalIdentity&)
-    : _fs(nullptr), _rtc(nullptr), _identity(nullptr), _running(false), _last_status_publish(0), _last_status{},
-      _node_name(nullptr), _network(nullptr) {
+    : _fs(nullptr), _rtc(nullptr), _identity(nullptr), _running(false), _last_status_publish(0),
+      _token_refresh_count(0), _token_refresh_active_until_ms(0), _last_status{}, _node_name(nullptr), _network(nullptr) {
   MQTTPrefsStore::setDefaults(_prefs);
 }
 
@@ -1024,6 +1034,7 @@ bool MQTTUplink::setOwnerEmail(const char*) { return false; }
 bool MQTTUplink::sendStatusNow() { return false; }
 bool MQTTUplink::isAnyBrokerConnected() const { return false; }
 const char* MQTTUplink::getAggregateBrokerState() const { return "down"; }
+bool MQTTUplink::isTokenRefreshInProgress() const { return false; }
 
 #endif
 

@@ -36,6 +36,7 @@ public:
 private:
 #if defined(ESP32)
   bool resolvePins();
+  void prepareBusForArchive() const;
   void refreshCardInfo();
 #endif
 

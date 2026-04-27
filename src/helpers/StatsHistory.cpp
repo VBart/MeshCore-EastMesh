@@ -396,6 +396,7 @@ uint8_t eventTypeFromName(const char* name) {
   if (strcmp(name, "low_memory") == 0) return HISTORY_EVENT_LOW_MEMORY;
   if (strcmp(name, "stats_enabled") == 0) return HISTORY_EVENT_STATS_ENABLED;
   if (strcmp(name, "stats_disabled") == 0) return HISTORY_EVENT_STATS_DISABLED;
+  if (strcmp(name, "mqtt_token_refreshed") == 0) return HISTORY_EVENT_MQTT_TOKEN_REFRESHED;
   return 0;
 }
 
@@ -1369,6 +1370,8 @@ const char* StatsHistory::getEventTypeName(uint8_t type) {
       return "stats_enabled";
     case HISTORY_EVENT_STATS_DISABLED:
       return "stats_disabled";
+    case HISTORY_EVENT_MQTT_TOKEN_REFRESHED:
+      return "mqtt_token_refreshed";
     default:
       return "unknown";
   }

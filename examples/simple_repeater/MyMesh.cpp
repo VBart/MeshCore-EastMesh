@@ -1793,8 +1793,12 @@ void MyMesh::updateStatsHistory(unsigned long now_ms) {
   const bool wifi_connected = network.isWifiConnected();
 #ifdef WITH_MQTT_UPLINK
   const bool mqtt_connected = mqtt.isAnyBrokerConnected();
+  const uint32_t mqtt_token_refresh_count = mqtt.getTokenRefreshCount();
+  const bool mqtt_token_refreshing = mqtt.isTokenRefreshInProgress();
 #else
   const bool mqtt_connected = false;
+  const uint32_t mqtt_token_refresh_count = 0;
+  const bool mqtt_token_refreshing = false;
 #endif
   const bool web_panel_up = web.isPanelRunning();
   const bool archive_mounted = (_archive != nullptr) && _archive->isMounted();
@@ -1821,11 +1825,22 @@ void MyMesh::updateStatsHistory(unsigned long now_ms) {
     _stats_state.web_panel_up = web_panel_up;
     _stats_state.archive_mounted = archive_mounted;
     _stats_state.low_memory = low_memory;
+    _stats_state.mqtt_token_refresh_count = mqtt_token_refresh_count;
     _stats_state.last_low_memory_event_uptime_secs = 0;
   } else {
+    if (_stats_state.mqtt_token_refresh_count != mqtt_token_refresh_count) {
+      const uint32_t refresh_delta = mqtt_token_refresh_count - _stats_state.mqtt_token_refresh_count;
+      recordStatsEvent(HISTORY_EVENT_MQTT_TOKEN_REFRESHED,
+                       static_cast<int16_t>(min<uint32_t>(refresh_delta, 32767)));
+      _stats_state.mqtt_token_refresh_count = mqtt_token_refresh_count;
+    }
     if (_stats_state.mqtt_connected != mqtt_connected) {
-      recordStatsEvent(mqtt_connected ? HISTORY_EVENT_MQTT_CONNECTED : HISTORY_EVENT_MQTT_DISCONNECTED);
-      _stats_state.mqtt_connected = mqtt_connected;
+      if (_stats_state.mqtt_connected && !mqtt_connected && mqtt_token_refreshing) {
+        // Planned JWT rotation briefly drops MQTT; keep the event stream focused on real outages.
+      } else {
+        recordStatsEvent(mqtt_connected ? HISTORY_EVENT_MQTT_CONNECTED : HISTORY_EVENT_MQTT_DISCONNECTED);
+        _stats_state.mqtt_connected = mqtt_connected;
+      }
     }
     if (_stats_state.web_panel_up != web_panel_up) {
       recordStatsEvent(web_panel_up ? HISTORY_EVENT_WEB_STARTED : HISTORY_EVENT_WEB_STOPPED);

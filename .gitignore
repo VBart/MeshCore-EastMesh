@@ -19,3 +19,4 @@ venv/
 platformio.local.ini
 src/helpers/mqtt/generated/
 site/
+debug/

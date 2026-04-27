@@ -65,6 +65,8 @@ public:
   bool isAnyBrokerConnected() const;
   const char* getAggregateBrokerState() const;
   void setNetworkStateProvider(NetworkStateProvider* network) { _network = network; }
+  uint32_t getTokenRefreshCount() const { return _token_refresh_count; }
+  bool isTokenRefreshInProgress() const;
 
 private:
 #if defined(ESP_PLATFORM)
@@ -101,6 +103,8 @@ private:
   MQTTPrefs _prefs;
   bool _running;
   unsigned long _last_status_publish;
+  uint32_t _token_refresh_count;
+  unsigned long _token_refresh_active_until_ms;
   MQTTStatusSnapshot _last_status;
   char _device_id[65];
   const char* _node_name;
