@@ -11,9 +11,15 @@
 #include <esp_idf_version.h>
 #include <esp_heap_caps.h>
 #include <esp_system.h>
+#if defined(CONFIG_MBEDTLS_CERTIFICATE_BUNDLE) && !(defined(ARDUINO) && ESP_IDF_VERSION_MAJOR < 5)
+#include <esp_crt_bundle.h>
+#define MQTT_USE_CRT_BUNDLE 1
+#define MQTT_CRT_BUNDLE_ATTACH esp_crt_bundle_attach
+#endif
 #include <helpers/TxtDataHelpers.h>
 #include <ctype.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 
 #ifndef FIRMWARE_VERSION
@@ -43,8 +49,14 @@
 namespace {
 constexpr unsigned long kBrokerRetryBaseMillis = 10000;
 constexpr unsigned long kBrokerRetryMaxMillis = 300000;
+constexpr unsigned long kHeapHeadroomRetryMillis = 30000;
+constexpr unsigned long kWsPreflightTimeoutMillis = 5000;
 constexpr unsigned long kTokenRefreshEventWindowMs = 2UL * 60UL * 1000UL;
 constexpr size_t kBrokerTokenSize = 640;
+constexpr size_t kWsTransportBufferSize = 1024;
+constexpr size_t kWsPreflightResponseSize = kWsTransportBufferSize;
+constexpr size_t kDualBrokerMinFreeHeap = 80U * 1024U;
+constexpr size_t kDualBrokerMinLargestHeap = 32U * 1024U;
 constexpr time_t kTokenLifetimeSecs = 6UL * 60UL * 60UL;
 constexpr time_t kTokenRefreshSlackSecs = 300;
 constexpr time_t kMinSaneEpoch = 1735689600;  // 2025-01-01T00:00:00Z
@@ -73,6 +85,19 @@ void freeScratchBuffer(void* ptr) {
   if (ptr != nullptr) {
     heap_caps_free(ptr);
   }
+}
+
+bool containsIgnoreCase(const char* haystack, const char* needle) {
+  if (haystack == nullptr || needle == nullptr || needle[0] == 0) {
+    return false;
+  }
+  const size_t needle_len = strlen(needle);
+  for (const char* scan = haystack; *scan != 0; ++scan) {
+    if (strncasecmp(scan, needle, needle_len) == 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 #if MQTT_DEBUG
@@ -134,8 +159,35 @@ bool MQTTUplink::hasEnabledBroker() const {
   return (_prefs.enabled_mask & 0x07) != 0;
 }
 
+uint8_t MQTTUplink::countEnabledBrokers() const {
+  uint8_t count = 0;
+  for (const BrokerState& broker : _brokers) {
+    if (broker.spec != nullptr && (_prefs.enabled_mask & broker.spec->bit) != 0) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+uint8_t MQTTUplink::countConnectedBrokers() const {
+  uint8_t count = 0;
+  for (const BrokerState& broker : _brokers) {
+    if (broker.spec != nullptr && broker.connected) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 bool MQTTUplink::isUnsetIataValue(const char* iata) {
   return iata == nullptr || iata[0] == 0 || strcmp(iata, MQTT_UNSET_IATA) == 0;
+}
+
+const char* MQTTUplink::brokerCaCert(const BrokerSpec& spec) {
+  if (spec.bit == kEastmeshBit) {
+    return mqtt_ca_certs::kEastmeshIsrgRootX1Pem;
+  }
+  return mqtt_ca_certs::kLetsmeshWe1Pem;
 }
 
 uint8_t MQTTUplink::normalizeEnabledMask(uint8_t mask) {
@@ -151,6 +203,125 @@ uint8_t MQTTUplink::normalizeEnabledMask(uint8_t mask) {
     }
   }
   return normalized;
+}
+
+bool MQTTUplink::hasConnectHeadroom(const BrokerState& broker) const {
+  const uint8_t enabled_count = countEnabledBrokers();
+  const uint8_t connected_count = countConnectedBrokers();
+  const bool dual_broker_attempt = enabled_count > 1 && connected_count > 0;
+  if (!dual_broker_attempt) {
+    return true;
+  }
+
+  const size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  const size_t largest_heap = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
+  if (free_heap >= kDualBrokerMinFreeHeap && largest_heap >= kDualBrokerMinLargestHeap) {
+    return true;
+  }
+
+  MQTT_LOG("%s connect deferred: heap headroom low heap_free=%u heap_max=%u required_heap_free=%u "
+           "required_heap_max=%u enabled=%u connected=%u",
+           broker.spec != nullptr ? broker.spec->label : "-",
+           static_cast<unsigned>(free_heap),
+           static_cast<unsigned>(largest_heap),
+           static_cast<unsigned>(kDualBrokerMinFreeHeap),
+           static_cast<unsigned>(kDualBrokerMinLargestHeap),
+           static_cast<unsigned>(enabled_count),
+           static_cast<unsigned>(connected_count));
+  return false;
+}
+
+bool MQTTUplink::preflightBroker(BrokerState& broker) const {
+  if (broker.spec == nullptr) {
+    return false;
+  }
+
+  logMqttMemorySnapshot("preflight-pre", broker.spec->label);
+  WiFiClientSecure client;
+  client.setCACert(brokerCaCert(*broker.spec));
+  client.setTimeout(kWsPreflightTimeoutMillis);
+  if (!client.connect(broker.spec->host, 443)) {
+    MQTT_LOG("%s preflight failed: tcp/tls connect", broker.spec->label);
+    client.stop();
+    logMqttMemorySnapshot("preflight-failed", broker.spec->label);
+    return false;
+  }
+
+  client.print("GET /mqtt HTTP/1.1\r\n"
+               "Connection: Upgrade\r\n"
+               "Upgrade: websocket\r\n"
+               "Sec-WebSocket-Version: 13\r\n"
+               "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+               "User-Agent: MeshCore-EastMesh\r\n"
+               "Host: ");
+  client.print(broker.spec->host);
+  client.print(":443\r\n\r\n");
+
+  char response[kWsPreflightResponseSize];
+  size_t used = 0;
+  bool header_complete = false;
+  unsigned long deadline_ms = millis() + kWsPreflightTimeoutMillis;
+  response[0] = 0;
+
+  while (static_cast<long>(millis() - deadline_ms) < 0) {
+    while (client.available() > 0) {
+      int c = client.read();
+      if (c < 0) {
+        break;
+      }
+      if (used + 1 >= sizeof(response)) {
+        response[used] = 0;
+        MQTT_LOG("%s preflight failed: response header too large bytes=%u", broker.spec->label,
+                 static_cast<unsigned>(used));
+        client.stop();
+        logMqttMemorySnapshot("preflight-failed", broker.spec->label);
+        return false;
+      }
+      response[used++] = static_cast<char>(c);
+      response[used] = 0;
+      if (strstr(response, "\r\n\r\n") != nullptr) {
+        header_complete = true;
+        break;
+      }
+    }
+    if (header_complete) {
+      break;
+    }
+    if (!client.connected() && client.available() <= 0) {
+      break;
+    }
+    delay(10);
+  }
+
+  client.stop();
+  if (!header_complete) {
+    MQTT_LOG("%s preflight failed: incomplete response bytes=%u", broker.spec->label, static_cast<unsigned>(used));
+    logMqttMemorySnapshot("preflight-failed", broker.spec->label);
+    return false;
+  }
+
+  char status_line[48];
+  size_t status_len = 0;
+  while (status_len + 1 < sizeof(status_line) && response[status_len] != 0 && response[status_len] != '\r' &&
+         response[status_len] != '\n') {
+    status_line[status_len] = response[status_len];
+    ++status_len;
+  }
+  status_line[status_len] = 0;
+
+  bool ok = strncmp(response, "HTTP/", 5) == 0 && strstr(status_line, " 101") != nullptr &&
+            containsIgnoreCase(response, "\r\nSec-WebSocket-Accept:");
+  if (!ok) {
+    MQTT_LOG("%s preflight failed: status=\"%s\" accept=%d", broker.spec->label, status_line,
+             containsIgnoreCase(response, "\r\nSec-WebSocket-Accept:") ? 1 : 0);
+    logMqttMemorySnapshot("preflight-failed", broker.spec->label);
+    return false;
+  }
+
+  MQTT_LOG("%s preflight ok: status=\"%s\"", broker.spec->label, status_line);
+  logMqttMemorySnapshot("preflight-ok", broker.spec->label);
+  return true;
 }
 
 void MQTTUplink::formatTopic(char* dst, size_t dst_size, const char* leaf) const {
@@ -340,7 +511,7 @@ bool MQTTUplink::refreshToken(BrokerState& broker) {
 }
 
 void MQTTUplink::destroyBroker(BrokerState& broker, bool reset_retry_state) {
-  bool had_runtime_state = broker.client != nullptr || broker.token != nullptr || broker.connected ||
+  bool had_runtime_state = broker.client != nullptr || broker.token != nullptr || broker.connected || broker.started ||
                            broker.connect_announced || broker.reconnect_pending || broker.next_connect_attempt != 0 ||
                            broker.last_connect_attempt != 0 || broker.reconnect_failures != 0 ||
                            broker.token_expires_at != 0;
@@ -349,14 +520,33 @@ void MQTTUplink::destroyBroker(BrokerState& broker, bool reset_retry_state) {
   }
   logMqttMemorySnapshot("destroy-pre", broker.spec != nullptr ? broker.spec->label : nullptr);
   if (broker.client != nullptr) {
-    MQTT_LOG("%s destroy broker client", broker.spec->label);
-    esp_mqtt_client_stop(broker.client);
-    esp_mqtt_client_destroy(broker.client);
+    if (broker.started) {
+      MQTT_LOG("%s stop broker client", broker.spec->label);
+      esp_err_t stop_rc = esp_mqtt_client_stop(broker.client);
+      MQTT_LOG("%s stop broker client rc=0x%x", broker.spec->label, stop_rc);
+      if (heap_caps_check_integrity_all(true)) {
+        MQTT_LOG("%s destroy broker client", broker.spec->label);
+        esp_err_t destroy_rc = esp_mqtt_client_destroy(broker.client);
+        MQTT_LOG("%s destroy broker client rc=0x%x", broker.spec->label, destroy_rc);
+      } else {
+        // Avoid freeing through esp-mqtt after the IDF 4.4 WSS transport has already poisoned the heap.
+        MQTT_LOG("%s abandon stopped broker client: heap corrupt", broker.spec->label);
+      }
+    } else {
+      if (heap_caps_check_integrity_all(true)) {
+        MQTT_LOG("%s destroy broker client", broker.spec->label);
+        esp_err_t destroy_rc = esp_mqtt_client_destroy(broker.client);
+        MQTT_LOG("%s destroy broker client rc=0x%x", broker.spec->label, destroy_rc);
+      } else {
+        MQTT_LOG("%s abandon broker client: heap corrupt", broker.spec->label);
+      }
+    }
     broker.client = nullptr;
   }
   freeScratchBuffer(broker.token);
   broker.token = nullptr;
   broker.connected = false;
+  broker.started = false;
   broker.connect_announced = false;
   broker.connected_since_ms = 0;
   broker.token_expires_at = 0;
@@ -537,6 +727,17 @@ void MQTTUplink::publishStatus(bool online) {
   logMqttMemorySnapshot(online ? "status-post" : "status-offline-post");
 }
 
+void MQTTUplink::scheduleBrokerRetry(BrokerState& broker, unsigned long now_ms, bool count_failure) {
+  if (count_failure && broker.reconnect_failures < 10) {
+    broker.reconnect_failures++;
+  }
+  broker.reconnect_pending = true;
+  broker.next_connect_attempt = now_ms + getBrokerRetryDelayMillis(broker.reconnect_failures);
+  MQTT_LOG("%s reconnect in %lu ms (failures=%u)", broker.spec != nullptr ? broker.spec->label : "-",
+           getBrokerRetryDelayMillis(broker.reconnect_failures),
+           static_cast<unsigned>(broker.reconnect_failures));
+}
+
 void MQTTUplink::handleMqttEvent(void* handler_args, esp_event_base_t, int32_t event_id, void* event_data) {
   auto* broker = static_cast<BrokerState*>(handler_args);
   if (broker == nullptr) {
@@ -563,14 +764,7 @@ void MQTTUplink::handleMqttEvent(void* handler_args, esp_event_base_t, int32_t e
                static_cast<int>(WiFi.status()), WiFi.RSSI(), connected_for_ms);
       logMqttMemorySnapshot("disconnected", broker->spec->label);
       if (!broker->reconnect_pending) {
-        if (broker->reconnect_failures < 10) {
-          broker->reconnect_failures++;
-        }
-        broker->reconnect_pending = true;
-        broker->next_connect_attempt = now_ms + getBrokerRetryDelayMillis(broker->reconnect_failures);
-        MQTT_LOG("%s reconnect in %lu ms (failures=%u)", broker->spec->label,
-                 getBrokerRetryDelayMillis(broker->reconnect_failures),
-                 static_cast<unsigned>(broker->reconnect_failures));
+        scheduleBrokerRetry(*broker, now_ms, true);
       }
       break;
     case MQTT_EVENT_ERROR:
@@ -589,14 +783,7 @@ void MQTTUplink::handleMqttEvent(void* handler_args, esp_event_base_t, int32_t e
       MQTT_LOG("%s wifi_status=%d rssi=%d", broker->spec->label, static_cast<int>(WiFi.status()), WiFi.RSSI());
       logMqttMemorySnapshot("error", broker->spec->label);
       if (!broker->reconnect_pending) {
-        if (broker->reconnect_failures < 10) {
-          broker->reconnect_failures++;
-        }
-        broker->reconnect_pending = true;
-        broker->next_connect_attempt = now_ms + getBrokerRetryDelayMillis(broker->reconnect_failures);
-        MQTT_LOG("%s reconnect in %lu ms (failures=%u)", broker->spec->label,
-                 getBrokerRetryDelayMillis(broker->reconnect_failures),
-                 static_cast<unsigned>(broker->reconnect_failures));
+        scheduleBrokerRetry(*broker, now_ms, true);
       }
       break;
     case MQTT_EVENT_BEFORE_CONNECT:
@@ -644,7 +831,26 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
     if (!broker.reconnect_pending || now_ms < broker.next_connect_attempt) {
       return;
     }
-    destroyBroker(broker, false);
+    if (!allow_new_connect) {
+      return;
+    }
+    broker.last_connect_attempt = now_ms;
+    broker.reconnect_pending = false;
+    if (!preflightBroker(broker)) {
+      scheduleBrokerRetry(broker, now_ms, true);
+      return;
+    }
+    MQTT_LOG("%s mqtt reconnect requested", broker.spec->label);
+    logMqttMemorySnapshot("reconnect-pre", broker.spec->label);
+    esp_err_t reconnect_rc = esp_mqtt_client_reconnect(broker.client);
+    if (reconnect_rc != ESP_OK) {
+      MQTT_LOG("%s mqtt reconnect failed rc=0x%x", broker.spec->label, reconnect_rc);
+      logMqttMemorySnapshot("reconnect-failed", broker.spec->label);
+      scheduleBrokerRetry(broker, now_ms, true);
+    } else {
+      logMqttMemorySnapshot("reconnect-requested", broker.spec->label);
+    }
+    return;
   }
 
   if (broker.next_connect_attempt != 0 && now_ms < broker.next_connect_attempt) {
@@ -653,8 +859,18 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
   if (!allow_new_connect) {
     return;
   }
+  if (!hasConnectHeadroom(broker)) {
+    broker.reconnect_pending = true;
+    broker.next_connect_attempt = now_ms + kHeapHeadroomRetryMillis;
+    return;
+  }
   broker.last_connect_attempt = now_ms;
   broker.reconnect_pending = false;
+
+  if (!preflightBroker(broker)) {
+    scheduleBrokerRetry(broker, now_ms, true);
+    return;
+  }
 
   if (!refreshToken(broker)) {
     broker.reconnect_pending = true;
@@ -672,7 +888,11 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
   cfg.broker.address.port = 443;
   cfg.broker.address.transport = MQTT_TRANSPORT_OVER_WSS;
   cfg.broker.address.path = "/mqtt";
-  cfg.broker.verification.certificate = mqtt_ca_certs::kCombinedPem;
+#if defined(MQTT_USE_CRT_BUNDLE)
+  cfg.broker.verification.crt_bundle_attach = MQTT_CRT_BUNDLE_ATTACH;
+#else
+  cfg.broker.verification.certificate = brokerCaCert(*broker.spec);
+#endif
   cfg.credentials.username = broker.username;
   cfg.credentials.client_id = broker.client_id;
   cfg.credentials.authentication.password = broker.token;
@@ -699,7 +919,11 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
   cfg.network_timeout_ms = 10000;
   cfg.disable_auto_reconnect = true;
   cfg.transport = MQTT_TRANSPORT_OVER_WSS;
-  cfg.cert_pem = mqtt_ca_certs::kCombinedPem;
+#if defined(MQTT_USE_CRT_BUNDLE)
+  cfg.crt_bundle_attach = MQTT_CRT_BUNDLE_ATTACH;
+#else
+  cfg.cert_pem = brokerCaCert(*broker.spec);
+#endif
   cfg.lwt_topic = broker.status_topic;
   cfg.lwt_msg = broker.offline_payload;
   cfg.lwt_qos = 1;
@@ -723,6 +947,7 @@ void MQTTUplink::ensureBroker(BrokerState& broker, bool allow_new_connect) {
     broker.next_connect_attempt = now_ms + kBrokerRetryBaseMillis;
     destroyBroker(broker, false);
   } else {
+    broker.started = true;
     MQTT_LOG("%s mqtt start requested", broker.spec->label);
     logMqttMemorySnapshot("start-requested", broker.spec->label);
   }
