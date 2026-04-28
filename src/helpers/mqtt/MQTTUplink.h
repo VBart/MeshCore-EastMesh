@@ -82,6 +82,7 @@ private:
     const BrokerSpec* spec;
     esp_mqtt_client_handle_t client;
     bool connected;
+    bool started;
     bool connect_announced;
     bool reconnect_pending;
     unsigned long last_connect_attempt;
@@ -117,12 +118,18 @@ private:
   static constexpr uint8_t kMaxEnabledBrokers = 2;
   static const BrokerSpec kBrokerSpecs[3];
   static bool isUnsetIataValue(const char* iata);
+  static const char* brokerCaCert(const BrokerSpec& spec);
 
   BrokerState _brokers[3];
 
   static void handleMqttEvent(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data);
+  static void scheduleBrokerRetry(BrokerState& broker, unsigned long now_ms, bool count_failure);
   bool hasEnabledBroker() const;
+  uint8_t countEnabledBrokers() const;
+  uint8_t countConnectedBrokers() const;
   static uint8_t normalizeEnabledMask(uint8_t mask);
+  bool hasConnectHeadroom(const BrokerState& broker) const;
+  bool preflightBroker(BrokerState& broker) const;
   void formatTopic(char* dst, size_t dst_size, const char* leaf) const;
   void refreshIdentityStrings();
   void refreshBrokerIdentity(BrokerState& broker);

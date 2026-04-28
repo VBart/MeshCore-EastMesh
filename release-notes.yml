@@ -500,3 +500,30 @@ releases:
         area: web-panel
         text: "Updated the web panel and custom CLI docs for the planned MQTT token-refresh event and the new web-panel region shortcut."
     breaking_changes: []
+
+  - track: repeater-mqtt
+    version: "1.3.13"
+    tag: "repeater-mqtt-eastmesh-v1.3.13"
+    date: "2026-04-28"
+    previous_version: "1.3.12"
+    summary: "Adds a safe MQTT WebSocket preflight for broker failover, restores clean MQTT client destruction when the heap is healthy, and clarifies that EastMesh MQTT repeaters feed Eastern Australia Core telemetry."
+    changes:
+      - type: fixed
+        area: mqtt
+        text: "Added a bounded WebSocket upgrade preflight before MQTT connects and reconnects so down or misrouted brokers that return non-upgrade HTTP responses are backed off before the ESP32 IDF 4.4 WebSocket transport can corrupt heap."
+      - type: fixed
+        area: mqtt
+        text: "Restored normal MQTT client destruction when heap integrity is clean, while keeping a guarded abandon path if heap poisoning is already detected before `esp_mqtt_client_destroy()`."
+      - type: changed
+        area: mqtt
+        text: "Reduced dual-broker connection pressure by checking both free internal heap and largest internal heap block before starting a second broker while another broker is already connected."
+      - type: changed
+        area: mqtt
+        text: "Switched retrying disconnected MQTT clients to `esp_mqtt_client_reconnect()` instead of destroying and recreating the client on every reconnect attempt."
+      - type: changed
+        area: mqtt
+        text: "Scoped MQTT TLS CA selection per broker instead of passing the combined CA bundle on Arduino-ESP32 2.x builds, while keeping certificate-bundle support for newer ESP-IDF stacks."
+      - type: docs
+        area: readme
+        text: "Updated the README to describe EastMesh as an Eastern Australia community mesh network, introduce CoreScope telemetry, and warn that MQTT repeater builds are intended for Eastern Australia repeaters only."
+    breaking_changes: []
