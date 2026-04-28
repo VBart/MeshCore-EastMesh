@@ -55,10 +55,13 @@ WebSensorSnapshot collectWebSensorSnapshot(mesh::MainBoard& board, SensorManager
   LocationProvider* location = sensors.getLocationProvider();
   if (location != nullptr) {
     snapshot.has_gps = true;
-    snapshot.gps_enabled = location->isEnabled();
-    snapshot.gps_fix = location->isValid();
+    const bool provider_enabled = location->isEnabled();
+    const char* gps_setting = sensors.getSettingByKey("gps");
+    const bool setting_active = (gps_setting == nullptr) || (strcmp(gps_setting, "1") == 0);
+    snapshot.gps_enabled = provider_enabled && setting_active;
+    snapshot.gps_fix = snapshot.gps_enabled && location->isValid();
     const long satellites = location->satellitesCount();
-    if (snapshot.gps_enabled || satellites > 0) {
+    if (snapshot.gps_enabled) {
       snapshot.has_satellites = true;
       snapshot.satellites = max<long>(satellites, 0);
     }

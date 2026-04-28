@@ -229,13 +229,13 @@ The `/stats` page currently shows:
 
 - `Services`: MQTT, web, archive, neighbour count, and, when mounted, card and archive capacity
 - optional full-width `Environment` summary card on boards that report GPS or environmental telemetry
-- `Trends`: battery, heap free, packet activity, signal, noise floor, and, when GPS is enabled, satellites
+- `Trends`: battery, heap free, packet activity, signal, noise floor, and, when GPS is active, satellites
 - `Neighbours`: current neighbour table with ID, SNR, heard age, and advert age
 - `Events`: current boot/session events
 
 Planned MQTT JWT rotations are shown as `mqtt_token_refreshed` events instead of a short `mqtt_disconnected` / `mqtt_connected` pair.
 
-For boards that expose extra telemetry, the optional `Environment` summary card can show current values such as GPS fix state, latitude, longitude, GPS altitude, voltage, sensor temperature, humidity, barometer, pressure-derived altitude, and MCU temperature.
+For boards that expose extra telemetry, the optional `Environment` summary card can show current values such as GPS active/fix state, latitude, longitude, GPS altitude, voltage, sensor temperature, humidity, barometer, pressure-derived altitude, and MCU temperature.
 
 Metrics with no current value are hidden rather than showing placeholder rows, so the cards vary by board and by current sensor state.
 
@@ -248,7 +248,7 @@ The trend graphs load sequentially rather than as one large payload:
 3. memory
 4. packet activity
 5. signal
-6. satellites when GPS is enabled
+6. satellites when GPS is active
 
 This keeps browser-side and device-side memory use lower than the previous in-page stats view.
 
