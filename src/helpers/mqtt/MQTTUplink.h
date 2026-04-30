@@ -94,7 +94,7 @@ private:
     char* token;
     char client_id[48];
     char status_topic[128];
-    char offline_payload[256];
+    char offline_payload[512];
   };
 #endif
 
