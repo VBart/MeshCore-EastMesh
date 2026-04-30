@@ -538,4 +538,7 @@ releases:
       - type: fixed
         area: stats
         text: "Updated `/stats` GPS gauges and satellite trends to respect the active GPS setting so boards that report GPS hardware as on but deactivated after `gps off` no longer keep satellite metrics visible."
+      - type: fixed
+        area: mqtt
+        text: "Increased the MQTT offline last-will payload buffer so the retained offline status JSON is not truncated when release metadata and identity fields are near their configured limits."
     breaking_changes: []
